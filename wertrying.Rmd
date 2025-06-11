@@ -1,0 +1,10 @@
+---
+title: "smile time"
+author: "Summer"
+date: "2025-06-11"
+output: html_document
+---
+
+```{r yay}
+
+```
