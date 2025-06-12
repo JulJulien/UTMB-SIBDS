@@ -1,0 +1,165 @@
+---
+title: "Main"
+author: "Summer"
+date: "2025-06-12"
+output: html_document
+---
+
+--------------------
+Install important packages and libraries
+--------------------
+```{r package}
+library(dplyr)
+library(readxl)
+library(corrplot)
+library(ggplot2)
+library(tidyverse)
+library(emmeans)
+library(ggpubr)
+library(gridExtra)
+```
+
+--------------------
+Load data from excel
+--------------------
+```{r load}
+file_path <- ("/Users/summerjohnson/Desktop/UTMB-SIBDS/macrophagextcNGS.xlsx")
+data <- read_xlsx("/Users/summerjohnson/Desktop/UTMB-SIBDS/macrophagextcNGS.xlsx")
+head(data)
+```
+
+--------------------
+Column Handling
+--------------------
+```{r redo}
+#Rename columns
+colnames(data) [colnames(data) == "ENSEMBL_id"] <- "id"
+colnames(data) [colnames(data) == "type"] <- "gene_type"
+colnames(data) [colnames(data) == "name"] <- "gene_name"
+colnames(data) [colnames(data) == "WT vs WT @ 6h"] <- "wt0wt6"
+colnames(data) [colnames(data) == "padj...5"] <- "padj_wt0wt6"
+colnames(data) [colnames(data) == "WT vs WT @ 18h"] <- "wt0wt18"
+colnames(data) [colnames(data) == "padj...8"] <- "padj_wt0wt18"
+colnames(data) [colnames(data) == "KO vs KO @ 6h"] <- "ko0ko6"
+colnames(data) [colnames(data) == "padj...11"] <- "padj_ko0ko6"
+colnames(data) [colnames(data) == "KO vs KO @ 18h"] <- "ko0ko18"
+colnames(data) [colnames(data) == "padj...14"] <- "padj_ko0ko18"
+colnames(data) [colnames(data) == "KO vs WT @ 0h"] <- "ko0wt0"
+colnames(data) [colnames(data) == "padj...17"] <- "padj_ko0wt0"
+colnames(data) [colnames(data) == "KO vs WT @ 6h"] <- "ko0wt6"
+colnames(data) [colnames(data) == "padj...20"] <- "padj_ko0wt6"
+colnames(data) [colnames(data) == "KO vs WT @ 18h"] <- "ko0wt18"
+colnames(data) [colnames(data) == "padj...23"] <- "padj_ko0wt18"
+
+#Create subset with only necessary columns
+tc_data <- data[, c("id", "gene_type", "gene_name",
+                    "wt0wt6", "padj_wt0wt6",
+                    "wt0wt18", "padj_wt0wt18",
+                    "ko0ko6", "padj_ko0ko6",
+                    "ko0ko18", "padj_ko0ko18",
+                    "ko0wt0", "padj_ko0wt0",
+                    "ko0wt6", "padj_ko0wt6",
+                    "ko0wt18", "padj_ko0wt18")]
+
+
+```
+
+--------------------
+Key
+--------------------
+id: id number of each experiment <chr>
+gene_type: different types of RNAs and pseudo genes <chr>
+gene_name: different gene names that re being transcribed <chr>
+padj: adjusted p value (of comparison) <float>
+wt0wt6: WT @ 0h vs WT @ 6h <float>
+wt0wt18: WT @ 0h vs WT @ 18h <float>
+ko0ko6: KO @ 0h vs KO @ 6h <float>
+ko0ko18: KO @ 0h vs KO @ 18h <float>
+ko0wt0: KO @ 0h vs WT @ 0h <float>
+ko0wt6: KO @ 0h vs WT @ 6h <float>
+ko0wt18: KO @ 0h vs WT @ 18h <float>
+
+
+--------------------
+Groups In Study 
+--------------------
+WT BMD macrophage ( Tc negative / o hrs)
+WT BMD macrophage (Tc positive, incubation time 6hrs )
+WT BMD macrophage (Tc positive, incubation time 18hrs )
+PARP KO (PARP gene knock out) BMD macrophage ( Tc negative / o hrs)
+PARP KO BMD macrophage (Tc positive, incubation time 6hrs )
+PARP KO BMD macrophage (Tc positive, incubation time 18hrs )
+
+--------------------
+Definitions
+--------------------
+WT: Wild type - Parp1 is present
+KO: Knock out - Parp1 has been silenced
+BMD: 
+Macrophage:
+Parp1: 
+Tc: 
+
+
+--------------------
+NA Handling
+- If both comparison and padj NA, remove? Add to new dataset? (why are those gene transcriptions not being captured?)
+- NA in all comparisons vs NA in some comparisons? 
+- What to do if comparison is present but padj is absent?
+--------------------
+``` {r na}
+```
+
+--------------------
+EDA
+--------------------
+```{r eda}
+#Histograms of different comparison scores for normalization
+
+#Histogram of WT @ 0h vs WT @ 6h
+ggplot(tc_data, aes(x = wt0wt6)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
+  labs(title = "Histogram of WT @ 0h vs WT @ 6h", x = "WT @ 0h vs WT @ 6h", y = "Count")
+
+#Histogram of WT @ 0h vs WT @ 18h
+ggplot(tc_data, aes(x = wt0wt18)) +
+  geom_histogram(binwidth = 1, fill = "orange", color = "black") +
+  labs(title + "Histogram of WT @ 0h vs WT @ 18h", x ="WT @ 0h vs WT @ 18h", y = "Count")
+
+#Histogram of KO @ 0h vs KO @ 6h
+ggplot(tc_data, aes(x = ko0ko6)) +
+  geom_histogram(binwidth = 1, fill = "pink", color = "black") +
+  labs(title + "Histogram of KO @ 0h vs KO @ 6h", x = "KO @ 0h vs KO @ 6h", y = "Count")
+
+#Histogram of KO @ 0h vs KO @ 18h
+ggplot(tc_data, aes(x = ko0ko18)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(title + "Histogram of KO @ 0h vs KO @ 18h", x = "KO @ 0h vs KO @ 18h", y = "Count")
+
+#Histogram of KO @ 0h vs WT @ 0h
+ggplot(tc_data, aes(x = ko0wt0)) +
+  geom_histogram(binwidth = 1, fill = "green", color = "black") +
+  labs(title + "Histogram of KO @ 0h vs WT @ 0h", x = "KO @ 0h vs WT @ 0h", y = "Count")
+
+#Histogram of KO @ 0h vs WT @ 6h
+ggplot(tc_data, aes(x = ko0wt6)) +
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black") +
+  labs(title + "Histogram of KO @ 0h vs WT @ 6h", x = "KO @ 0h vs WT @ 6h", y = "Count")
+
+#Histogram of KO @ 0h vs WT @ 18h
+ggplot(tc_data, aes(x = ko0wt18)) +
+  geom_histogram(binwidth = 1, fill = "purple", color = "black") +
+  labs(title + "Histogram of KO @ 0h vs WT @ 18h", x = "KO @ 0h vs WT @ 18h", y = "Count")
+
+```
+
+
+Different things we can look at / Questions
+- Can you predict what type of RNA or pseudo gene is being tested (column B) based off of the presence of a specific gene at comparison ___? [decision trees]
+- Something to do with 0 values? No change... why? Similarities?
+- Different time comparisons 0 vs 6 vs 18 by type of RNA/pseudo gene (which class/type has bigger differences)
+
+
+
+
+
