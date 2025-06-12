@@ -23,9 +23,9 @@ library(gridExtra)
 Load data from excel
 --------------------
 ```{r load}
-file_path <- ("/Users/summerjohnson/Desktop/UTMB-SIBDS/macrophagextcNGS.xlsx")
-data <- read_xlsx("/Users/summerjohnson/Desktop/UTMB-SIBDS/macrophagextcNGS.xlsx")
-head(data)
+file_path <- ("/Users/summerjohnson/Documents/GitHub/UTMB-SIBDS/macrophagextcNGS.xlsx")
+data <- read_xlsx("/Users/summerjohnson/Documents/GitHub/UTMB-SIBDS/macrophagextcNGS.xlsx")
+data
 ```
 
 --------------------
@@ -60,7 +60,7 @@ tc_data <- data[, c("id", "gene_type", "gene_name",
                     "ko0wt0", "padj_ko0wt0",
                     "ko0wt6", "padj_ko0wt6",
                     "ko0wt18", "padj_ko0wt18")]
-
+head(tc_data)
 
 ```
 
@@ -95,10 +95,10 @@ Definitions
 --------------------
 WT: Wild type - Parp1 is present
 KO: Knock out - Parp1 has been silenced
-BMD: 
-Macrophage:
-Parp1: 
-Tc: 
+BMD: 'bone marrow derived'
+Macrophage: type of white blood cells that surrounds and kills microorganisms, removes dead cells, and stimulates the action of other immune system cells
+Parp1: nuclear enzyme that plays a role in DNA repair, chromatin structure, and gene expression
+Tc: parasite (parasitic protozoan) responsible for chagas disease
 
 
 --------------------
@@ -108,6 +108,11 @@ NA Handling
 - What to do if comparison is present but padj is absent?
 --------------------
 ``` {r na}
+tc_data <- tc_data %>%
+  filter(!(wt0wt6 == "NA" & wt0wt18 == "NA" & ko0ko6 == "NA" & ko0ko18 == "NA"
+           & ko0wt0 == "NA" & ko0wt6 == "NA" & ko0wt18 == "NA"))
+
+tc_data
 ```
 
 --------------------
