@@ -70,14 +70,14 @@ Key
 id: id number of each experiment <chr>
 gene_type: different types of RNAs and pseudo genes <chr>
 gene_name: different gene names that re being transcribed <chr>
-padj: adjusted p value (of comparison) <float>
-wt0wt6: WT @ 0h vs WT @ 6h <float>
-wt0wt18: WT @ 0h vs WT @ 18h <float>
-ko0ko6: KO @ 0h vs KO @ 6h <float>
-ko0ko18: KO @ 0h vs KO @ 18h <float>
-ko0wt0: KO @ 0h vs WT @ 0h <float>
-ko0wt6: KO @ 0h vs WT @ 6h <float>
-ko0wt18: KO @ 0h vs WT @ 18h <float>
+padj: adjusted p value (of comparison) <double>
+wt0wt6: WT @ 0h vs WT @ 6h <double>
+wt0wt18: WT @ 0h vs WT @ 18h <double>
+ko0ko6: KO @ 0h vs KO @ 6h <double>
+ko0ko18: KO @ 0h vs KO @ 18h <double>
+ko0wt0: KO @ 0h vs WT @ 0h <double>
+ko0wt6: KO @ 0h vs WT @ 6h <double>
+ko0wt18: KO @ 0h vs WT @ 18h <double>
 
 
 --------------------
@@ -108,11 +108,16 @@ NA Handling
 - What to do if comparison is present but padj is absent?
 --------------------
 ``` {r na}
+#Remove NA variables from comparison columns
 tc_data <- tc_data %>%
   filter(!(wt0wt6 == "NA" & wt0wt18 == "NA" & ko0ko6 == "NA" & ko0ko18 == "NA"
            & ko0wt0 == "NA" & ko0wt6 == "NA" & ko0wt18 == "NA"))
 
-tc_data
+#Convert character columns to numeric
+cols_to_convert <- setdiff(colnames(tc_data), c("id", "gene_type", "gene_name" ))
+
+tc_data[cols_to_convert] <- lapply(tc_data[cols_to_convert], as.numeric)
+
 ```
 
 --------------------
@@ -122,39 +127,41 @@ EDA
 #Histograms of different comparison scores for normalization
 
 #Histogram of WT @ 0h vs WT @ 6h
-ggplot(tc_data, aes(x = wt0wt6)) +
+hist_1 <- ggplot(tc_data, aes(x = wt0wt6)) +
   geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
   labs(title = "Histogram of WT @ 0h vs WT @ 6h", x = "WT @ 0h vs WT @ 6h", y = "Count")
 
 #Histogram of WT @ 0h vs WT @ 18h
-ggplot(tc_data, aes(x = wt0wt18)) +
+hist_2 <- ggplot(tc_data, aes(x = wt0wt18)) +
   geom_histogram(binwidth = 1, fill = "orange", color = "black") +
-  labs(title + "Histogram of WT @ 0h vs WT @ 18h", x ="WT @ 0h vs WT @ 18h", y = "Count")
+  labs(title = "Histogram of WT @ 0h vs WT @ 18h", x ="WT @ 0h vs WT @ 18h", y = "Count")
 
 #Histogram of KO @ 0h vs KO @ 6h
-ggplot(tc_data, aes(x = ko0ko6)) +
+hist_3 <- ggplot(tc_data, aes(x = ko0ko6)) +
   geom_histogram(binwidth = 1, fill = "pink", color = "black") +
-  labs(title + "Histogram of KO @ 0h vs KO @ 6h", x = "KO @ 0h vs KO @ 6h", y = "Count")
+  labs(title = "Histogram of KO @ 0h vs KO @ 6h", x = "KO @ 0h vs KO @ 6h", y = "Count")
 
 #Histogram of KO @ 0h vs KO @ 18h
-ggplot(tc_data, aes(x = ko0ko18)) +
+hist_4 <- ggplot(tc_data, aes(x = ko0ko18)) +
   geom_histogram(binwidth = 1, fill = "blue", color = "black") +
-  labs(title + "Histogram of KO @ 0h vs KO @ 18h", x = "KO @ 0h vs KO @ 18h", y = "Count")
+  labs(title = "Histogram of KO @ 0h vs KO @ 18h", x = "KO @ 0h vs KO @ 18h", y = "Count")
 
 #Histogram of KO @ 0h vs WT @ 0h
-ggplot(tc_data, aes(x = ko0wt0)) +
+hist_5 <- ggplot(tc_data, aes(x = ko0wt0)) +
   geom_histogram(binwidth = 1, fill = "green", color = "black") +
-  labs(title + "Histogram of KO @ 0h vs WT @ 0h", x = "KO @ 0h vs WT @ 0h", y = "Count")
+  labs(title = "Histogram of KO @ 0h vs WT @ 0h", x = "KO @ 0h vs WT @ 0h", y = "Count")
 
 #Histogram of KO @ 0h vs WT @ 6h
-ggplot(tc_data, aes(x = ko0wt6)) +
+hist_6 <- ggplot(tc_data, aes(x = ko0wt6)) +
   geom_histogram(binwidth = 1, fill = "lightgreen", color = "black") +
-  labs(title + "Histogram of KO @ 0h vs WT @ 6h", x = "KO @ 0h vs WT @ 6h", y = "Count")
+  labs(title = "Histogram of KO @ 0h vs WT @ 6h", x = "KO @ 0h vs WT @ 6h", y = "Count")
 
 #Histogram of KO @ 0h vs WT @ 18h
-ggplot(tc_data, aes(x = ko0wt18)) +
+hist_7 <- ggplot(tc_data, aes(x = ko0wt18)) +
   geom_histogram(binwidth = 1, fill = "purple", color = "black") +
-  labs(title + "Histogram of KO @ 0h vs WT @ 18h", x = "KO @ 0h vs WT @ 18h", y = "Count")
+  labs(title = "Histogram of KO @ 0h vs WT @ 18h", x = "KO @ 0h vs WT @ 18h", y = "Count")
+
+grid.arrange(hist_1, hist_2, hist_3, hist_4, hist_5, hist_6, hist_7, ncol = 3)
 
 ```
 
