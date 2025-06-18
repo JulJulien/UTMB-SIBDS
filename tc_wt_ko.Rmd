@@ -19,22 +19,21 @@ ko0wt0: KO @ 0h vs WT @ 0h <double>
 ko0wt6: KO @ 0h vs WT @ 6h <double>
 ko0wt18: KO @ 0h vs WT @ 18h <double>
 
-
 --------------------
 Groups In Study 
 --------------------
-WT BMD macrophage ( Tc negative / o hrs)
-WT BMD macrophage (Tc positive, incubation time 6hrs )
-WT BMD macrophage (Tc positive, incubation time 18hrs )
-PARP KO (PARP gene knock out) BMD macrophage ( Tc negative / o hrs)
-PARP KO BMD macrophage (Tc positive, incubation time 6hrs )
-PARP KO BMD macrophage (Tc positive, incubation time 18hrs )
+WT BMD macrophage (Tc negative / o hrs)
+WT BMD macrophage (Tc positive, incubation time 6hrs)
+WT BMD macrophage (Tc positive, incubation time 18hrs)
+PARP KO (PARP gene knock out) BMD macrophage (Tc negative / o hrs)
+PARP KO BMD macrophage (Tc positive, incubation time 6hrs)
+PARP KO BMD macrophage (Tc positive, incubation time 18hrs)
 
 --------------------
 Definitions
 --------------------
-WT: Wild type - Parp1 is present
-KO: Knock out - Parp1 has been silenced
+WT: Wild type - Tc is present
+KO: Knock out - Tc has been silenced
 BMD: 'bone marrow derived'
 Macrophage: type of white blood cells that surrounds and kills microorganisms, removes dead cells, and stimulates the action of other immune system cells
 Parp1: nuclear enzyme that plays a role in DNA repair, chromatin structure, and gene expression
@@ -159,15 +158,6 @@ grid.arrange(hist_1, hist_2, hist_3, hist_4, hist_5, hist_6, hist_7, ncol = 3)
 ```
 
 --------------------
-Significant Magnitudes of Change
---------------------
-``` {r significant}
-#Subset of significant differences (p values)
-
-
-```
-
---------------------
 Volcano Plots
 - Assess the relationship between magnitude of change and statistical significance of genes
 - Large changes and higher significance towards the top and edges of the plot
@@ -212,11 +202,77 @@ grid.arrange(vol1, vol2, vol3, vol4, vol5, vol6, vol7, ncol = 3)
 
 ```
 
+--------------------
+Significant Magnitudes of Change
+--------------------
+``` {r significant}
+#Threshold
+padj_threshold <- 0.05
+
+#Significant for all comparisons
+sig_all <- tc_data %>%
+  filter(
+    padj_wt0wt6 < padj_threshold &
+    padj_wt0wt18 < padj_threshold &
+    padj_ko0ko6 < padj_threshold &
+    padj_ko0ko18 < padj_threshold &
+    padj_ko0wt0 < padj_threshold &
+    padj_ko0wt6 < padj_threshold &
+    padj_ko0wt18 < padj_threshold
+  )
+
+#Significant for all wt vs wt comparisons
+sig_wt <- tc_data %>%
+  filter(
+    padj_wt0wt6 < padj_threshold &
+    padj_wt0wt18 < padj_threshold 
+  )
+
+#Significant for all ko vs ko comparisons
+sig_ko <- tc_data %>%
+  filter(
+    padj_ko0ko6 < padj_threshold &
+    padj_ko0ko18 < padj_threshold 
+  )
+
+#Significant for all ko vs wt comparisons
+sig_wtko <- tc_data %>%
+  filter(
+    padj_ko0wt0 < padj_threshold &
+    padj_ko0wt6 < padj_threshold &
+    padj_ko0wt18 < padj_threshold
+  )
+
+#Individual significance
+sig_wt0wt6 <- tc_data %>%
+  filter(padj_wt0wt6 < padj_threshold)
+
+sig_wt0wt18 <- tc_data %>%
+  filter(padj_wt0wt18 < padj_threshold)
+
+sig_ko0ko6 <- tc_data %>%
+  filter(padj_ko0ko6 < padj_threshold)
+
+sig_ko0ko18 <- tc_data %>%
+  filter(padj_ko0ko18 < padj_threshold)
+
+sig_ko0wt0 <- tc_data %>%
+  filter(padj_ko0wt0 < padj_threshold)
+
+sig_ko0wt6 <- tc_data %>%
+  filter(padj_ko0wt6 < padj_threshold)
+
+sig_ko0wt18 <- tc_data %>%
+  filter(padj_ko0wt18 < padj_threshold)
+
+```
+
+--------------------
 Different things we can look at / Questions
 - Can you predict what type of RNA or pseudo gene is being tested (column B) based off of the presence of a specific gene at comparison ___? [decision trees]
 - Something to do with 0 values? No change... why? Similarities?
 - Different time comparisons 0 vs 6 vs 18 by type of RNA/pseudo gene (which class/type has bigger differences)
-
+--------------------
 
 
 
