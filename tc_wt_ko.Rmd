@@ -51,6 +51,8 @@ library(tidyverse)
 library(emmeans)
 library(ggpubr)
 library(gridExtra)
+library(tidyr)
+library(broom)
 ```
 
 --------------------
@@ -267,6 +269,9 @@ sig_ko0wt18 <- tc_data %>%
 
 ```
 
+--------------------
+Repeating Genes
+--------------------
 ``` {r compare}
 # Keep only gene_names that have more than one gene_type
 multi_type_genes <- tc_data %>%
@@ -275,67 +280,132 @@ multi_type_genes <- tc_data %>%
   ungroup() %>%
   arrange(gene_name)
 
-# Pivot longer to compare across all timepoints
-tc_long <- multi_type_genes %>%
-  pivot_longer(
-    cols = c(wt0wt6, wt0wt18, ko0ko6, ko0ko18, ko0wt0, ko0wt6, ko0wt18),
-    names_to = "comparison",
-    values_to = "logFC"
-  )
+# Select relevant columns for wt0wt6
+wt0wt6_sig_by_type <- multi_type_genes %>%
+  select(gene_name, gene_type, padj_wt0wt6) %>%
+  filter(!is.na(padj_wt0wt6)) %>%
+  arrange(gene_name, gene_type)
 
-# Function to apply ANOVA per gene_name & comparison
-anova_results <- tc_long %>%
-  group_by(gene_name, comparison) %>%
-  filter(!is.na(logFC)) %>%
-  filter(n_distinct(gene_type) > 1) %>%  # Ensure ≥2 gene types
-  do({
-    model <- aov(logFC ~ gene_type, data = .)
-    tibble(
-      p_value = summary(model)[[1]][["Pr(>F)"]][1]
-    )
-  }) %>%
-  ungroup() %>%
-  mutate(padj = p.adjust(p_value, method = "fdr"))
+# View
+print(wt0wt6_sig_by_type)
 
+# Select relevant columns for wt0wt18
+wt0wt18_sig_by_type <- multi_type_genes %>%
+  select(gene_name, gene_type, padj_wt0wt18) %>%
+  filter(!is.na(padj_wt0wt18)) %>%
+  arrange(gene_name, gene_type)
 
-# Filter significant comparisons (e.g., FDR < 0.05)
-sig_anova <- anova_results %>%
-  filter(padj < 0.05)
+# View
+print(wt0wt18_sig_by_type)
 
-# Example plot function
-library(ggpubr)
+# Select relevant columns for ko0ko6
+ko0ko6_sig_by_type <- multi_type_genes %>%
+  select(gene_name, gene_type, padj_ko0ko6) %>%
+  filter(!is.na(padj_ko0ko6)) %>%
+  arrange(gene_name, gene_type)
 
-plot_list <- list()
+# View
+print(ko0ko6_sig_by_type)
 
-for (i in 1:nrow(sig_anova)) {
-  gene <- sig_anova$gene_name[i]
-  comp <- sig_anova$comparison[i]
+# Select relevant columns for ko0ko18
+ko0ko18_sig_by_type <- multi_type_genes %>%
+  select(gene_name, gene_type, padj_ko0ko18) %>%
+  filter(!is.na(padj_ko0ko18)) %>%
+  arrange(gene_name, gene_type)
 
-  p <- tc_long %>%
-    filter(gene_name == gene, comparison == comp) %>%
-    ggplot(aes(x = gene_type, y = logFC, fill = gene_type)) +
-    geom_boxplot() +
-    geom_jitter(width = 0.1, alpha = 0.5) +
-    labs(title = paste("Gene:", gene, "| Comparison:", comp),
-         x = "Gene Type", y = "Log Fold Change") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# View
+print(ko0ko18_sig_by_type)
 
-  plot_list[[length(plot_list) + 1]] <- p
-}
+# Select relevant columns for ko0wt0
+ko0wt0_sig_by_type <- multi_type_genes %>%
+  select(gene_name, gene_type, padj_ko0wt0) %>%
+  filter(!is.na(padj_ko0wt0)) %>%
+  arrange(gene_name, gene_type)
 
-# Arrange plots in a grid (show first 6 as an example)
-grid.arrange(grobs = plot_list[1:min(6, length(plot_list))], ncol = 2)
+# View
+print(ko0wt0_sig_by_type)
+
+# Select relevant columns for ko0wt6
+ko0wt6_sig_by_type <- multi_type_genes %>%
+  select(gene_name, gene_type, padj_ko0wt6) %>%
+  filter(!is.na(padj_ko0wt6)) %>%
+  arrange(gene_name, gene_type)
+
+# View
+print(ko0wt6_sig_by_type)
+
+# Select relevant columns for ko0wt18
+ko0wt18_sig_by_type <- multi_type_genes %>%
+  select(gene_name, gene_type, padj_ko0wt18) %>%
+  filter(!is.na(padj_ko0wt18)) %>%
+  arrange(gene_name, gene_type)
+
+# View
+print(ko0wt18_sig_by_type)
 
 
 ```
 
 --------------------
-Different things we can look at / Questions
-- Can you predict what type of RNA or pseudo gene is being tested (column B) based off of the presence of a specific gene at comparison ___? [decision trees]
-- Something to do with 0 values? No change... why? Similarities?
-- Different time comparisons 0 vs 6 vs 18 by type of RNA/pseudo gene (which class/type has bigger differences)
+Plotting and ANOVAS with repeating genes
+**IGNORE RN**
 --------------------
+``` {r plot}
+**IGNORE RN**
+#ANOVA plot
+plot_and_anova_by_comparison <- function(data, comparison_col) {
+  comp_label <- gsub("padj_", "", comparison_col)
+  
+  # Prep data: select and filter
+  df <- data %>%
+    select(gene_name, gene_type, !!sym(comparison_col)) %>%
+    rename(padj = !!sym(comparison_col)) %>%
+    filter(!is.na(padj)) %>%
+    mutate(log_padj = -log10(padj))
+  
+  # Plot: Dot + Violin plot faceted by gene_name
+  p <- ggplot(df, aes(x = gene_type, y = log_padj, color = gene_type)) +
+    geom_violin(alpha = 0.2, fill = NA) +
+    geom_jitter(width = 0.1, size = 3) +
+    facet_wrap(~ gene_name, scales = "free_y") +
+    labs(
+      title = paste0("Adjusted p-values (-log10) for ", comp_label, " by Gene Type"),
+      x = "Gene Type", y = "-log10(padj)"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+  print(p)
+  
+  # Run ANOVA for each gene_name
+  anova_results <- df %>%
+    group_by(gene_name) %>%
+    filter(n_distinct(gene_type) > 1) %>%  # Make sure we have more than 1 type
+    do({
+      model <- tryCatch(aov(log_padj ~ gene_type, data = .), error = function(e) NULL)
+      if (!is.null(model)) {
+        tidy_model <- broom::tidy(model)
+        tidy_model %>% filter(term == "gene_type")
+      } else {
+        tibble(term = "gene_type", df = NA, statistic = NA, p.value = NA)
+      }
+    }) %>%
+    ungroup()
+
+  return(anova_results)
+}
+
+
+anova_wt0wt6 <- plot_and_anova_by_comparison(multi_type_genes, "padj_wt0wt6")
+print(anova_wt0wt6)
+
+anova_wt0wt18 <- plot_and_anova_by_comparison(multi_type_genes, "padj_wt0wt18")
+print(anova_wt0wt18)
+```
+
+
+
+
 
 
 
