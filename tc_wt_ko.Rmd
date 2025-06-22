@@ -32,8 +32,8 @@ PARP KO BMD macrophage (Tc positive, incubation time 18hrs)
 --------------------
 Definitions
 --------------------
-WT: Wild type - Tc is present
-KO: Knock out - Tc has been silenced
+WT: Wild type - Parp1 is present
+KO: Knock out - Parp1 has been silenced
 BMD: 'bone marrow derived'
 Macrophage: type of white blood cells that surrounds and kills microorganisms, removes dead cells, and stimulates the action of other immune system cells
 Parp1: nuclear enzyme that plays a role in DNA repair, chromatin structure, and gene expression
@@ -85,7 +85,7 @@ colnames(data) [colnames(data) == "KO vs WT @ 18h"] <- "ko0wt18"
 colnames(data) [colnames(data) == "padj...23"] <- "padj_ko0wt18"
 
 #Create subset with only necessary columns
-tc_data <- data[, c("id", "gene_type", "gene_name",
+tc_data_1 <- data[, c("id", "gene_type", "gene_name",
                     "wt0wt6", "padj_wt0wt6",
                     "wt0wt18", "padj_wt0wt18",
                     "ko0ko6", "padj_ko0ko6",
@@ -102,7 +102,7 @@ NA Handling
 --------------------
 ``` {r na}
 #Remove NA variables from comparison columns
-tc_data <- tc_data %>%
+tc_data <- tc_data_1 %>%
   filter(!(wt0wt6 == "NA" & wt0wt18 == "NA" & ko0ko6 == "NA" & ko0ko18 == "NA"
            & ko0wt0 == "NA" & ko0wt6 == "NA" & ko0wt18 == "NA"))
 
@@ -264,6 +264,69 @@ sig_ko0wt6 <- tc_data %>%
 
 sig_ko0wt18 <- tc_data %>%
   filter(padj_ko0wt18 < padj_threshold)
+
+```
+
+``` {r compare}
+# Keep only gene_names that have more than one gene_type
+multi_type_genes <- tc_data %>%
+  group_by(gene_name) %>%
+  filter(n_distinct(gene_type) > 1) %>%
+  ungroup() %>%
+  arrange(gene_name)
+
+# Pivot longer to compare across all timepoints
+tc_long <- multi_type_genes %>%
+  pivot_longer(
+    cols = c(wt0wt6, wt0wt18, ko0ko6, ko0ko18, ko0wt0, ko0wt6, ko0wt18),
+    names_to = "comparison",
+    values_to = "logFC"
+  )
+
+# Function to apply ANOVA per gene_name & comparison
+anova_results <- tc_long %>%
+  group_by(gene_name, comparison) %>%
+  filter(!is.na(logFC)) %>%
+  filter(n_distinct(gene_type) > 1) %>%  # Ensure ≥2 gene types
+  do({
+    model <- aov(logFC ~ gene_type, data = .)
+    tibble(
+      p_value = summary(model)[[1]][["Pr(>F)"]][1]
+    )
+  }) %>%
+  ungroup() %>%
+  mutate(padj = p.adjust(p_value, method = "fdr"))
+
+
+# Filter significant comparisons (e.g., FDR < 0.05)
+sig_anova <- anova_results %>%
+  filter(padj < 0.05)
+
+# Example plot function
+library(ggpubr)
+
+plot_list <- list()
+
+for (i in 1:nrow(sig_anova)) {
+  gene <- sig_anova$gene_name[i]
+  comp <- sig_anova$comparison[i]
+
+  p <- tc_long %>%
+    filter(gene_name == gene, comparison == comp) %>%
+    ggplot(aes(x = gene_type, y = logFC, fill = gene_type)) +
+    geom_boxplot() +
+    geom_jitter(width = 0.1, alpha = 0.5) +
+    labs(title = paste("Gene:", gene, "| Comparison:", comp),
+         x = "Gene Type", y = "Log Fold Change") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+  plot_list[[length(plot_list) + 1]] <- p
+}
+
+# Arrange plots in a grid (show first 6 as an example)
+grid.arrange(grobs = plot_list[1:min(6, length(plot_list))], ncol = 2)
+
 
 ```
 
