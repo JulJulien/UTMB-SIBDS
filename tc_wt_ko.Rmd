@@ -273,85 +273,245 @@ sig_ko0wt18 <- tc_data %>%
 Repeating Genes
 --------------------
 ``` {r compare}
-# Keep only gene_names that have more than one gene_type
+#Keep only gene_names that have more than one gene_type
 multi_type_genes <- tc_data %>%
+  arrange(gene_name) %>%
   group_by(gene_name) %>%
   filter(n_distinct(gene_type) > 1) %>%
   ungroup() %>%
   arrange(gene_name)
 
-# Select relevant columns for wt0wt6
+print(multi_type_genes)
+#Only 7 genes that repeat in different types (that have data collected)
+#Only 1 gene (Zkscan7) that has adjusted p values for both types during comparisons
+
+#--------------------
+#Select relevant columns for wt0wt6
 wt0wt6_sig_by_type <- multi_type_genes %>%
   select(gene_name, gene_type, padj_wt0wt6) %>%
   filter(!is.na(padj_wt0wt6)) %>%
   arrange(gene_name, gene_type)
 
-# View
-print(wt0wt6_sig_by_type)
+#Alter for wt0wt6 plot
+multi_type_genes_1 <- multi_type_genes %>%
+    mutate(significant = case_when(
+      is.na(padj_wt0wt6) ~ "-",
+      padj_wt0wt6 < 0.05 ~ "*",
+      TRUE ~ NA_character_
+    ),
+         label_y = ifelse(wt0wt6 >= 0,
+                          wt0wt6 + 0.2,
+                          wt0wt6 - 0.2))
+#wt0wt6 plot
+wt0wt6_compplot <- ggplot(multi_type_genes_1, aes(x = gene_type, y = wt0wt6, color = gene_type)) +
+  geom_point(size = 4, position = position_dodge(width = 0.5)) +
+  geom_text(aes(label = significant, y = label_y), vjust = ifelse(multi_type_genes_1$wt0wt6 >= 0, 0, 1), size = 5) +
+  facet_wrap(~gene_name, scale = "fixed") +
+  theme_minimal() +
+  labs(x = "Gene Type", y = "WT @ 0h vs WT @ 6h", title = "Gene Comparisons w/ Significance", subtitle = "* = p < 0.05, - = missing p-value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
-# Select relevant columns for wt0wt18
+#View
+wt0wt6_sig_by_type
+wt0wt6_compplot
+#--------------------
+
+#--------------------
+#Select relevant columns for wt0wt18
 wt0wt18_sig_by_type <- multi_type_genes %>%
   select(gene_name, gene_type, padj_wt0wt18) %>%
   filter(!is.na(padj_wt0wt18)) %>%
   arrange(gene_name, gene_type)
 
-# View
-print(wt0wt18_sig_by_type)
+#Alter for wt0wt18 plot
+multi_type_genes_2 <- multi_type_genes %>%
+    mutate(significant = case_when(
+    is.na(padj_wt0wt18) ~ "-",
+    padj_wt0wt18 < 0.05 ~ "*",
+    TRUE ~ NA_character_
+    ),
+         label_y = ifelse(wt0wt18 >= 0,
+                          wt0wt18 + 0.2,
+                          wt0wt18 - 0.2))
+#wt0wt18 plot 
+wt0wt18_compplot <- ggplot(multi_type_genes_2, aes(x = gene_type, y = wt0wt18, color = gene_type)) +
+  geom_point(size = 4, position = position_dodge(width = 0.5)) +
+  geom_text(aes(label = significant, y = label_y), vjust = ifelse(multi_type_genes_2$wt0wt18 >= 0, 0, 1), size = 5) +
+  facet_wrap(~gene_name, scale = "fixed") +
+  theme_minimal() +
+  labs(x = "Gene Type", y = "WT @ 0h vs WT @ 18", title = "Gene Comparisons w/ Significance", subtitle = "* = p < 0.05, - = missing p-value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
-# Select relevant columns for ko0ko6
+#View
+wt0wt18_sig_by_type
+wt0wt18_compplot
+#--------------------
+
+#--------------------
+#Select relevant columns for ko0ko6
 ko0ko6_sig_by_type <- multi_type_genes %>%
   select(gene_name, gene_type, padj_ko0ko6) %>%
   filter(!is.na(padj_ko0ko6)) %>%
   arrange(gene_name, gene_type)
 
-# View
-print(ko0ko6_sig_by_type)
+#Alter for ko0ko6 plot
+multi_type_genes_3 <- multi_type_genes %>%
+    mutate(significant = case_when(
+    is.na(padj_ko0ko6) ~ "-",
+    padj_ko0ko6 < 0.05 ~ "*",
+    TRUE ~ NA_character_
+    ),
+         label_y = ifelse(ko0ko6 >= 0,
+                          ko0ko6 + 0.2,
+                          ko0ko6 - 0.2))
+#ko0ko6 plot
+ko0ko6_compplot <- ggplot(multi_type_genes_3, aes(x = gene_type, y = ko0ko6, color = gene_type)) +
+  geom_point(size = 4, position = position_dodge(width = 0.5)) +
+  geom_text(aes(label = significant, y = label_y), vjust = ifelse(multi_type_genes_3$ko0ko6 >= 0, 0, 1), size = 5) +
+  facet_wrap(~gene_name, scale = "fixed") +
+  theme_minimal() +
+  labs(x = "Gene Type", y = "KO @ 0h vs KO @ 6h", title = "Gene Comparisons w/ Significance", subtitle = "* = p < 0.05, - = missing p-value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
-# Select relevant columns for ko0ko18
+#View
+ko0ko6_sig_by_type
+ko0ko6_compplot
+#--------------------
+
+#--------------------
+#Select relevant columns for ko0ko18
 ko0ko18_sig_by_type <- multi_type_genes %>%
   select(gene_name, gene_type, padj_ko0ko18) %>%
   filter(!is.na(padj_ko0ko18)) %>%
   arrange(gene_name, gene_type)
 
-# View
-print(ko0ko18_sig_by_type)
+#Alter for ko0ko18 plot
+multi_type_genes_4 <- multi_type_genes %>%
+    mutate(significant = case_when(
+    is.na(padj_ko0ko18) ~ "-",
+    padj_ko0ko18 < 0.05 ~ "*",
+    TRUE ~ NA_character_
+    ),
+         label_y = ifelse(ko0ko18 >= 0,
+                          ko0ko18 + 0.2,
+                          ko0ko18 - 0.2))
+#ko0ko6 plot
+ko0ko18_compplot <- ggplot(multi_type_genes_4, aes(x = gene_type, y = ko0ko18, color = gene_type)) +
+  geom_point(size = 4, position = position_dodge(width = 0.5)) +
+  geom_text(aes(label = significant, y = label_y), vjust = ifelse(multi_type_genes_4$ko0ko18 >= 0, 0, 1), size = 5) +
+  facet_wrap(~gene_name, scale = "fixed") +
+  theme_minimal() +
+  labs(x = "Gene Type", y = "KO @ 0h vs KO @ 18h", title = "Gene Comparisons w/ Significance", subtitle = "* = p < 0.05, - = missing p-value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
-# Select relevant columns for ko0wt0
+#View
+ko0ko18_sig_by_type
+ko0ko18_compplot
+#--------------------
+
+#--------------------
+#Select relevant columns for ko0wt0
 ko0wt0_sig_by_type <- multi_type_genes %>%
   select(gene_name, gene_type, padj_ko0wt0) %>%
   filter(!is.na(padj_ko0wt0)) %>%
   arrange(gene_name, gene_type)
 
-# View
-print(ko0wt0_sig_by_type)
+#Alter for ko0wt0 plot
+multi_type_genes_5 <- multi_type_genes %>%
+    mutate(significant = case_when(
+    is.na(padj_ko0wt0) ~ "-",
+    padj_ko0wt0 < 0.05 ~ "*",
+    TRUE ~ NA_character_
+    ),
+         label_y = ifelse(ko0wt0 >= 0,
+                          ko0wt0 + 0.2,
+                          ko0wt0 - 0.2))
+#ko0wt0 plot
+ko0wt0_compplot <- ggplot(multi_type_genes_5, aes(x = gene_type, y = ko0wt0, color = gene_type)) +
+  geom_point(size = 4, position = position_dodge(width = 0.5)) +
+  geom_text(aes(label = significant, y = label_y), vjust = ifelse(multi_type_genes_5$ko0wt0 >= 0, 0, 1), size = 5) +
+  facet_wrap(~gene_name, scale = "fixed") +
+  theme_minimal() +
+  labs(x = "Gene Type", y = "KO @ 0h vs WT @ 0h", title = "Gene Comparisons w/ Significance", subtitle = "* = p < 0.05, - = missing p-value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
-# Select relevant columns for ko0wt6
+#View
+ko0wt0_sig_by_type
+ko0wt0_compplot
+#--------------------
+
+#--------------------
+#Select relevant columns for ko0wt6
 ko0wt6_sig_by_type <- multi_type_genes %>%
   select(gene_name, gene_type, padj_ko0wt6) %>%
   filter(!is.na(padj_ko0wt6)) %>%
   arrange(gene_name, gene_type)
 
-# View
-print(ko0wt6_sig_by_type)
+#Alter for ko0wt6 plot
+multi_type_genes_6 <- multi_type_genes %>%
+  mutate(significant = case_when(
+    is.na(padj_ko0wt6) ~ "-",
+    padj_ko0wt6 < 0.05 ~ "*",
+    TRUE ~ NA_character_
+    ),
+         label_y = ifelse(ko0wt6 >= 0,
+                          ko0wt6 + 0.2,
+                          ko0wt6 - 0.2))
+#ko0wt6 plot
+ko0wt6_compplot <- ggplot(multi_type_genes_6, aes(x = gene_type, y = ko0wt6, color = gene_type)) +
+  geom_point(size = 4, position = position_dodge(width = 0.5)) +
+  geom_text(aes(label = significant, y = label_y), vjust = ifelse(multi_type_genes_6$ko0wt6 >= 0, 0, 1), size = 5) +
+  facet_wrap(~gene_name, scale = "fixed") +
+  theme_minimal() +
+  labs(x = "Gene Type", y = "KO @ 0h vs WT @ 6h", title = "Gene Comparisons w/ Significance", subtitle = "* = p < 0.05, - = missing p-value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
-# Select relevant columns for ko0wt18
+#View
+ko0wt6_sig_by_type
+ko0wt6_compplot
+#--------------------
+
+#--------------------
+#Select relevant columns for ko0wt18
 ko0wt18_sig_by_type <- multi_type_genes %>%
   select(gene_name, gene_type, padj_ko0wt18) %>%
   filter(!is.na(padj_ko0wt18)) %>%
   arrange(gene_name, gene_type)
 
-# View
-print(ko0wt18_sig_by_type)
+#Alter for ko0wt18 plot
+multi_type_genes_7 <- multi_type_genes %>%
+  mutate(significant = case_when(
+    is.na(padj_ko0wt18) ~ "-",
+    padj_ko0wt18 < 0.05 ~ "*",
+    TRUE ~ NA_character_
+    ),
+         label_y = ifelse(ko0wt18 >= 0,
+                          ko0wt18 + 0.2,
+                          ko0wt18 - 0.2))
+#ko0wt18 plot
+ko0wt18_compplot <- ggplot(multi_type_genes_7, aes(x = gene_type, y = ko0wt18, color = gene_type)) +
+  geom_point(size = 4, position = position_dodge(width = 0.5)) +
+  geom_text(aes(label = significant, y = label_y), vjust = ifelse(multi_type_genes_7$ko0wt18 >= 0, 0, 1), size = 5) +
+  facet_wrap(~gene_name, scale = "fixed") +
+  theme_minimal() +
+  labs(x = "Gene Type", y = "KO @ 0h vs WT @ 18h", title = "Gene Comparisons w/ Significance", subtitle = "* = p < 0.05, - = missing p-value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
+#View
+ko0wt18_sig_by_type
+ko0wt18_compplot
+#--------------------
 
 ```
+
+
+
 
 --------------------
 Plotting and ANOVAS with repeating genes
 **IGNORE RN**
 --------------------
 ``` {r plot}
-**IGNORE RN**
 #ANOVA plot
 plot_and_anova_by_comparison <- function(data, comparison_col) {
   comp_label <- gsub("padj_", "", comparison_col)
