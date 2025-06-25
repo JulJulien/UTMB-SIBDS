@@ -55,6 +55,7 @@ library(tidyr)
 library(broom)
 library(ggrepel)
 library(writexl)
+library(rlang)
 ```
 
 --------------------
@@ -207,19 +208,19 @@ grid.arrange(vol1, vol2, vol3, vol4, vol5, vol6, vol7, ncol = 3)
 ```
 
 --------------------
-Significant Increases by Gene Type
+Significant Increases by Gene Type - Antisense & wt0wt6
 --------------------
 ``` {r incgenetype}
 
 #-----------------
 #Create subset of significant increases in wt0wt6 for antisense RNA
-sig_antisense_wt0wt6 <- tc_data %>%
+sig_antisense_wt0wt6_inc <- tc_data %>%
   filter(gene_type == "antisense", padj_wt0wt6 < 0.05, wt0wt6 > 0) %>%
   select(gene_type, gene_name, wt0wt6, padj_wt0wt6) %>%
   arrange(wt0wt6)
 
 #Plot subset of significant increases in wt0wt6 for antisense RNA
-sig_antisense_wt0wt6_bp <- ggplot(sig_antisense_wt0wt6, aes(x = reorder(gene_name, wt0wt6), y = wt0wt6, fill = gene_name)) +
+sig_antisense_wt0wt6_inc_bp <- ggplot(sig_antisense_wt0wt6_inc, aes(x = reorder(gene_name, wt0wt6), y = wt0wt6, fill = gene_name)) +
   geom_bar(stat = "identity") +
   coord_flip() +
   theme_minimal() +
@@ -231,23 +232,159 @@ sig_antisense_wt0wt6_bp <- ggplot(sig_antisense_wt0wt6, aes(x = reorder(gene_nam
   labs(
     x = "Gene",
     y = "WT @ 0h vs WT @ 6h",
-    title = "Plot of Antisense Gene Expression for WT @ 0h vs WT @ 6h"
+    title = "Plot of Increasing Antisense Gene Expression for WT @ 0h vs WT @ 6h"
   )
 
 #Save plot as png
-ggsave("antisense_wt0wt6_sig_bp.png", plot = sig_antisense_wt0wt6_bp, bg = "white", width = 8, height = 12, dpi = 300)
+ggsave("antisense_wt0wt6_sig_inc_bp.png", plot = sig_antisense_wt0wt6_inc_bp, bg = "white", width = 8, height = 12, dpi = 300)
 
 #Save subset as excel
-write_xlsx(sig_antisense_wt0wt6, "sig_antisense_wt0wt6.xlsx")
-getwd()
+write_xlsx(sig_antisense_wt0wt6_inc, "sig_antisense_wt0wt6_inc.xlsx")
 #-----------------
 
 ```
 
 --------------------
-Significant Decreases by Gene Type
+Significant Decreases by Gene Type - Antisense % wt0wt6
 --------------------
 ``` {r decgenetype}
+#Create subset of significant decreases in wt0wt6 for antisense RNA
+sig_antisense_wt0wt6_dec <- tc_data %>%
+  filter(gene_type == "antisense", padj_wt0wt6 < 0.05, wt0wt6 < 0) %>%
+  select(gene_type, gene_name, wt0wt6, padj_wt0wt6) %>%
+  arrange(wt0wt6)
+
+#Plot subset of significant decreases in wt0wt6 for antisense RNA
+sig_antisense_wt0wt6_dec_bp <- ggplot(sig_antisense_wt0wt6_dec, aes(x = reorder(gene_name, wt0wt6), y = wt0wt6, fill = gene_name)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 7),  # Adjust size as needed
+    plot.margin = margin(10, 10, 10, 30)   # Add margin for long labels
+  ) +
+  labs(
+    x = "Gene",
+    y = "WT @ 0h vs WT @ 6h",
+    title = "Plot of Decreasing Antisense Gene Expression for WT @ 0h vs WT @ 6h"
+  )
+
+#Save plot as png
+ggsave("antisense_wt0wt6_sig_dec_bp.png", plot = sig_antisense_wt0wt6_dec_bp, bg = "white", width = 8, height = 12, dpi = 300)
+
+#Save subset as excel
+write_xlsx(sig_antisense_wt0wt6_dec, "sig_antisense_wt0wt6_dec.xlsx")
+```
+
+--------------------
+Sig Inc by Gene Type Using User input
+--------------------
+``` {r user_input_increase}
+# Prompt user for inputs
+print("Gene Type Options: ")
+unique(tc_data$gene_type)
+print("Comparison Type Options: 'wt0wt5', 'wt0wt18', 'ko0ko6', 'ko0ko18', 'ko0wt0', 'ko0wt6', 'ko0wt18'")
+rna_type <- readline(prompt = "Enter which gene type you would like to see the significant increases of: ")
+comparison_type <- readline(prompt = "Enter which comparison you would like to see the significant increases of: ")
+
+# Dynamically refer to columns
+comparison_col <- sym(comparison_type)
+padj_col <- sym(paste0("padj_", comparison_type))
+
+# Filter and create subset
+sig_subset_inc <- tc_data %>%
+  filter(
+    gene_type == rna_type,
+    !!padj_col < 0.05,
+    !!comparison_col > 0
+  ) %>%
+  select(gene_type, gene_name, !!comparison_col, !!padj_col) %>%
+  arrange(!!comparison_col)
+
+# Rename selected columns for consistent plotting
+colnames(sig_subset_inc)[which(names(sig_subset_inc) == comparison_type)] <- "comparison_value"
+colnames(sig_subset_inc)[which(names(sig_subset_inc) == paste0("padj_", comparison_type))] <- "padj_value"
+
+# Create plot
+sig_inc_plot <- ggplot(sig_subset_inc, aes(x = reorder(gene_name, comparison_value), y = comparison_value, fill = gene_name)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 7),
+    plot.margin = margin(10, 10, 10, 30)
+  ) +
+  labs(
+    x = "Gene",
+    y = paste0("Change in ", comparison_type),
+    title = paste("Significant Increase in", rna_type, "Expression for", comparison_type)
+  )
+
+# Save plot
+plot_filename <- paste0(rna_type, "_", comparison_type, "_sig_inc_bp.png")
+ggsave(plot_filename, plot = sig_inc_plot, bg = "white", width = 8, height = 12, dpi = 300)
+
+# Save Excel file
+excel_filename <- paste0("sig_", rna_type, "_", comparison_type, "_inc.xlsx")
+write_xlsx(sig_subset_inc, excel_filename)
+#-----------------
+```
+
+--------------------
+Sig Dec by Gene Type Using User input
+--------------------
+``` {r user_input_decrease}
+# Prompt user for inputs
+print("Gene Type Options: ")
+unique(tc_data$gene_type)
+print("Comparison Type Options: 'wt0wt5', 'wt0wt18', 'ko0ko6', 'ko0ko18', 'ko0wt0', 'ko0wt6', 'ko0wt18'")
+rna_type <- readline(prompt = "Enter which gene type you would like to see the significant decreases of: ")
+comparison_type <- readline(prompt = "Enter which comparison you would like to see the significant decreases of: ")
+
+# Dynamically refer to columns
+comparison_col <- sym(comparison_type)
+padj_col <- sym(paste0("padj_", comparison_type))
+
+# Filter and create subset
+sig_subset_dec <- tc_data %>%
+  filter(
+    gene_type == rna_type,
+    !!padj_col < 0.05,
+    !!comparison_col < 0
+  ) %>%
+  select(gene_type, gene_name, !!comparison_col, !!padj_col) %>%
+  arrange(!!comparison_col)
+
+# Rename selected columns for consistent plotting
+colnames(sig_subset_dec)[which(names(sig_subset_dec) == comparison_type)] <- "comparison_value"
+colnames(sig_subset_dec)[which(names(sig_subset_dec) == paste0("padj_", comparison_type))] <- "padj_value"
+
+# Create plot
+sig_dec_plot <- ggplot(sig_subset_dec, aes(x = reorder(gene_name, comparison_value), y = comparison_value, fill = gene_name)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 7),
+    plot.margin = margin(10, 10, 10, 30)
+  ) +
+  labs(
+    x = "Gene",
+    y = paste0("Change in ", comparison_type),
+    title = paste("Significant Decrease(s) in", rna_type, "Expression for", comparison_type)
+  )
+
+# Save plot
+plot_filename <- paste0(rna_type, "_", comparison_type, "_sig_dec_bp.png")
+ggsave(plot_filename, plot = sig_dec_plot, bg = "white", width = 8, height = 12, dpi = 300)
+
+# Save Excel file
+excel_filename <- paste0("sig_", rna_type, "_", comparison_type, "_dec.xlsx")
+write_xlsx(sig_subset_dec, excel_filename)
+#-----------------
 ```
 
 --------------------
