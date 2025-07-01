@@ -1,0 +1,25 @@
+---
+title: "Vaccine"
+author: "Summer"
+date: "2025-07-01"
+output: html_document
+---
+
+--------------------
+Install important packages and libraries
+--------------------
+```{r package}
+library(dplyr)
+library(readxl)
+library(corrplot)
+library(ggplot2)
+library(tidyverse)
+library(emmeans)
+library(ggpubr)
+library(gridExtra)
+library(tidyr)
+library(broom)
+library(ggrepel)
+library(writexl)
+library(rlang)
+```

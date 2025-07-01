@@ -1,5 +1,5 @@
 ---
-title: "Main"
+title: "Macrophage"
 author: "Summer"
 date: "2025-06-12"
 output: html_document
@@ -119,162 +119,68 @@ tc_data[cols_to_convert] <- lapply(tc_data[cols_to_convert], as.numeric)
 ```
 
 --------------------
-EDA
+EDA - User Input
 - Histograms of different comparison scores to check for normalization
 --------------------
 ```{r eda}
-#Histogram of WT @ 0h vs WT @ 6h
-hist_1 <- ggplot(tc_data, aes(x = wt0wt6)) +
-  geom_histogram(binwidth = 1, fill = "aquamarine", color = "black") +
-  labs(title = "Histogram of WT @ 0h vs WT @ 6h", x = "WT @ 0h vs WT @ 6h", y = "Count")
+#User input for histogram
+print("Comparison Type Options: 'wt0wt6', 'wt0wt18', 'ko0ko6', 'ko0ko18', 'ko0wt0', 'ko0wt6', 'ko0wt18'")
+comparison_type_eda <- readline(prompt = "Enter which comparison you would like to see the significant increases of: ")
 
-#Histogram of WT @ 0h vs WT @ 18h
-hist_2 <- ggplot(tc_data, aes(x = wt0wt18)) +
-  geom_histogram(binwidth = 1, fill = "coral", color = "black") +
-  labs(title = "Histogram of WT @ 0h vs WT @ 18h", x ="WT @ 0h vs WT @ 18h", y = "Count")
-
-#Histogram of KO @ 0h vs KO @ 6h
-hist_3 <- ggplot(tc_data, aes(x = ko0ko6)) +
-  geom_histogram(binwidth = 1, fill = "brown2", color = "black") +
-  labs(title = "Histogram of KO @ 0h vs KO @ 6h", x = "KO @ 0h vs KO @ 6h", y = "Count")
-
-#Histogram of KO @ 0h vs KO @ 18h
-hist_4 <- ggplot(tc_data, aes(x = ko0ko18)) +
-  geom_histogram(binwidth = 1, fill = "darkgoldenrod", color = "black") +
-  labs(title = "Histogram of KO @ 0h vs KO @ 18h", x = "KO @ 0h vs KO @ 18h", y = "Count")
-
-#Histogram of KO @ 0h vs WT @ 0h
-hist_5 <- ggplot(tc_data, aes(x = ko0wt0)) +
-  geom_histogram(binwidth = 1, fill = "darkorchid3", color = "black") +
-  labs(title = "Histogram of KO @ 0h vs WT @ 0h", x = "KO @ 0h vs WT @ 0h", y = "Count")
-
-#Histogram of KO @ 0h vs WT @ 6h
-hist_6 <- ggplot(tc_data, aes(x = ko0wt6)) +
-  geom_histogram(binwidth = 1, fill = "deepskyblue3", color = "black") +
-  labs(title = "Histogram of KO @ 0h vs WT @ 6h", x = "KO @ 0h vs WT @ 6h", y = "Count")
-
-#Histogram of KO @ 0h vs WT @ 18h
-hist_7 <- ggplot(tc_data, aes(x = ko0wt18)) +
-  geom_histogram(binwidth = 1, fill = "darkolivegreen", color = "black") +
-  labs(title = "Histogram of KO @ 0h vs WT @ 18h", x = "KO @ 0h vs WT @ 18h", y = "Count")
-
-grid.arrange(hist_1, hist_2, hist_3, hist_4, hist_5, hist_6, hist_7, ncol = 3)
+# Generate the histogram based on user input
+if (comparison_type_eda %in% names(tc_data)) {
+  ggplot(tc_data, aes(x = tc_data[[comparison_type_eda]])) +
+    geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+    labs(
+      title = paste("Histogram of", comparison_type_eda),
+      x = comparison_type_eda,
+      y = "Count"
+    )
+} else {
+  message("Invalid comparison type entered.")
+}
 
 ```
 
 --------------------
-Volcano Plots
+Volcano Plots - User Input
 - Assess the relationship between magnitude of change and statistical significance of genes
 - Large changes and higher significance towards the top and edges of the plot
 --------------------
 ``` {r volcano}
-#Volcano Plot of WT @ 0h vs WT @ 6h
-vol1 <- ggplot(tc_data, aes(x = wt0wt6, y = -log10(padj_wt0wt6))) +
-  geom_point(color = "aquamarine") +
-  labs(title = "Volcano Plot of WT @ 0h vs WT @ 6h", x = "WT @ 0h vs WT @ 6h", y = "-log()")
+# Define valid comparisons and their corresponding p-value columns
+valid_comparisons <- c("wt0wt6", "wt0wt18", "ko0ko6", "ko0ko18", "ko0wt0", "ko0wt6", "ko0wt18")
+padj_lookup <- list(
+  wt0wt6 = "padj_wt0wt6",
+  wt0wt18 = "padj_wt0wt18",
+  ko0ko6 = "padj_ko0ko6",
+  ko0ko18 = "padj_ko0ko18",
+  ko0wt0 = "padj_ko0wt0",
+  ko0wt6 = "padj_ko0wt6",
+  ko0wt18 = "padj_ko0wt18"
+)
 
-#Volcano Plot of WT @ 0h vs WT @ 18h
-vol2 <- ggplot(tc_data, aes(x = wt0wt18, y = -log10(padj_wt0wt18))) +
-  geom_point(color = "coral") +
-  labs(title = "Volcano Plot of WT @ 0h vs WT @ 18h", x = "WT @ 0h vs WT @ 18h", y = "-log()")
+# Ask user for comparison
+print(paste("Comparison Type Options:", paste(valid_comparisons, collapse = ", ")))
+comparison_type_volc <- readline(prompt = "Enter which comparison you would like to see the volcano plot of: ")
 
-#Volcano Plot of KO @ 0h vs KO @ 6h
-vol3 <- ggplot(tc_data, aes(x = ko0ko6, y = -log10(padj_ko0ko6))) +
-  geom_point(color = "brown2") +
-  labs(title = "Volcano Plot of KO @ 0h vs KO @ 6h", x = "KO @ 0h vs KO @ 6h", y = "-log()")
+# Check validity and plot
+if (comparison_type_eda %in% valid_comparisons) {
+  x_col <- comparison_type_volc
+  y_col <- padj_lookup[[comparison_type_volc]]
+  
+  ggplot(tc_data, aes(x = tc_data[[x_col]], y = -log10(tc_data[[y_col]]))) +
+    geom_point(color = "steelblue") +
+    labs(
+      title = paste("Volcano Plot of", comparison_type_volc),
+      x = x_col,
+      y = "-log10(padj)"
+    )
+  
+} else {
+  message("Invalid comparison type entered.")
+}
 
-#Volcano Plot of KO @ 0h vs KO @ 18h
-vol4 <- ggplot(tc_data, aes(x = ko0ko18, y = -log10(padj_ko0ko18))) +
-  geom_point(color = "darkgoldenrod") +
-  labs(title = "Volcano Plot of KO @ 0h vs KO @ 18h", x = "KO @ 0h vs KO @ 18h", y = "-log()")
-
-#Volcano Plot of KO @ 0h vs WT @ 0h
-vol5 <- ggplot(tc_data, aes(x = ko0wt0, y = -log10(padj_ko0wt0))) +
-  geom_point(color = "darkorchid3") +
-  labs(title = "Volcano Plot of KO @ 0h vs WT @ 0h", x = "KO @ 0h vs WT @ 0h", y = "-log()")
-
-#Volcano Plot of KO @ 0h vs WT @ 6h
-vol6 <- ggplot(tc_data, aes(x = ko0wt6, y = -log10(padj_ko0wt6))) +
-  geom_point(color = "deepskyblue3") +
-  labs(title = "Volcano Plot of KO @ 0h vs WT @ 6h", x = "KO @ 0h vs WT @ 6h", y = "-log()")
-
-#Volcano Plot of KO @ 0h vs WT @ 18h
-vol7 <- ggplot(tc_data, aes(x = ko0wt18, y = -log10(padj_ko0wt18))) +
-  geom_point(color = "darkolivegreen") +
-  labs(title = "Volcano Plot of KO @ 0h vs WT @ 18h", x = "KO @ 0h vs WT @ 18h", y = "-log()")
-
-grid.arrange(vol1, vol2, vol3, vol4, vol5, vol6, vol7, ncol = 3)
-
-```
-
---------------------
-Significant Increases by Gene Type - Antisense & wt0wt6
---------------------
-``` {r incgenetype}
-
-#-----------------
-#Create subset of significant increases in wt0wt6 for antisense RNA
-sig_antisense_wt0wt6_inc <- tc_data %>%
-  filter(gene_type == "antisense", padj_wt0wt6 < 0.05, wt0wt6 > 0) %>%
-  select(gene_type, gene_name, wt0wt6, padj_wt0wt6) %>%
-  arrange(wt0wt6)
-
-#Plot subset of significant increases in wt0wt6 for antisense RNA
-sig_antisense_wt0wt6_inc_bp <- ggplot(sig_antisense_wt0wt6_inc, aes(x = reorder(gene_name, wt0wt6), y = wt0wt6, fill = gene_name)) +
-  geom_bar(stat = "identity") +
-  coord_flip() +
-  theme_minimal() +
-  theme(
-    legend.position = "none",
-    axis.text.y = element_text(size = 7),  # Adjust size as needed
-    plot.margin = margin(10, 10, 10, 30)   # Add margin for long labels
-  ) +
-  labs(
-    x = "Gene",
-    y = "WT @ 0h vs WT @ 6h",
-    title = "Plot of Increasing Antisense Gene Expression for WT @ 0h vs WT @ 6h"
-  )
-
-#Save plot as png
-ggsave("antisense_wt0wt6_sig_inc_bp.png", plot = sig_antisense_wt0wt6_inc_bp, bg = "white", width = 8, height = 12, dpi = 300)
-
-#Save subset as excel
-write_xlsx(sig_antisense_wt0wt6_inc, "sig_antisense_wt0wt6_inc.xlsx")
-#-----------------
-
-```
-
---------------------
-Significant Decreases by Gene Type - Antisense % wt0wt6
---------------------
-``` {r decgenetype}
-#Create subset of significant decreases in wt0wt6 for antisense RNA
-sig_antisense_wt0wt6_dec <- tc_data %>%
-  filter(gene_type == "antisense", padj_wt0wt6 < 0.05, wt0wt6 < 0) %>%
-  select(gene_type, gene_name, wt0wt6, padj_wt0wt6) %>%
-  arrange(wt0wt6)
-
-#Plot subset of significant decreases in wt0wt6 for antisense RNA
-sig_antisense_wt0wt6_dec_bp <- ggplot(sig_antisense_wt0wt6_dec, aes(x = reorder(gene_name, wt0wt6), y = wt0wt6, fill = gene_name)) +
-  geom_bar(stat = "identity") +
-  coord_flip() +
-  theme_minimal() +
-  theme(
-    legend.position = "none",
-    axis.text.y = element_text(size = 7),  # Adjust size as needed
-    plot.margin = margin(10, 10, 10, 30)   # Add margin for long labels
-  ) +
-  labs(
-    x = "Gene",
-    y = "WT @ 0h vs WT @ 6h",
-    title = "Plot of Decreasing Antisense Gene Expression for WT @ 0h vs WT @ 6h"
-  )
-
-#Save plot as png
-ggsave("antisense_wt0wt6_sig_dec_bp.png", plot = sig_antisense_wt0wt6_dec_bp, bg = "white", width = 8, height = 12, dpi = 300)
-
-#Save subset as excel
-write_xlsx(sig_antisense_wt0wt6_dec, "sig_antisense_wt0wt6_dec.xlsx")
 ```
 
 --------------------
@@ -686,70 +592,5 @@ ko0wt18_compplot
 #--------------------
 
 ```
-
-
-
-
---------------------
-Plotting and ANOVAS with repeating genes
-**IGNORE RN**
---------------------
-``` {r plot}
-#ANOVA plot
-plot_and_anova_by_comparison <- function(data, comparison_col) {
-  comp_label <- gsub("padj_", "", comparison_col)
-  
-  # Prep data: select and filter
-  df <- data %>%
-    select(gene_name, gene_type, !!sym(comparison_col)) %>%
-    rename(padj = !!sym(comparison_col)) %>%
-    filter(!is.na(padj)) %>%
-    mutate(log_padj = -log10(padj))
-  
-  # Plot: Dot + Violin plot faceted by gene_name
-  p <- ggplot(df, aes(x = gene_type, y = log_padj, color = gene_type)) +
-    geom_violin(alpha = 0.2, fill = NA) +
-    geom_jitter(width = 0.1, size = 3) +
-    facet_wrap(~ gene_name, scales = "free_y") +
-    labs(
-      title = paste0("Adjusted p-values (-log10) for ", comp_label, " by Gene Type"),
-      x = "Gene Type", y = "-log10(padj)"
-    ) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-  print(p)
-  
-  # Run ANOVA for each gene_name
-  anova_results <- df %>%
-    group_by(gene_name) %>%
-    filter(n_distinct(gene_type) > 1) %>%  # Make sure we have more than 1 type
-    do({
-      model <- tryCatch(aov(log_padj ~ gene_type, data = .), error = function(e) NULL)
-      if (!is.null(model)) {
-        tidy_model <- broom::tidy(model)
-        tidy_model %>% filter(term == "gene_type")
-      } else {
-        tibble(term = "gene_type", df = NA, statistic = NA, p.value = NA)
-      }
-    }) %>%
-    ungroup()
-
-  return(anova_results)
-}
-
-
-anova_wt0wt6 <- plot_and_anova_by_comparison(multi_type_genes, "padj_wt0wt6")
-print(anova_wt0wt6)
-
-anova_wt0wt18 <- plot_and_anova_by_comparison(multi_type_genes, "padj_wt0wt18")
-print(anova_wt0wt18)
-```
-
-
-
-
-
-
 
 
