@@ -6,6 +6,41 @@ output: html_document
 ---
 
 --------------------
+Key
+--------------------
+NHS: Normal healthy subjects
+ASYM: Chagas disease patients with no clinical symptoms
+SYM: Chagas disease patients with clinical symptoms
+ID: Identification marker for 1 of the 42 patients studied
+
+--------------------
+Definitions
+--------------------
+Serum: Liquid secreted after blood clots
+Plasma: Liquid secreted when anti-coagulant is applied to blood
+Copeptin:
+- Peptide derived from the precursor of vasopressin
+- Serves as a surrogate biomarker for vasopressin release
+- Useful id diagnosing diabetes insipidus, heart failure, and acute myocardial infarction since vasopression is unstable in blood but copeptin is not
+HnRNPA1:
+- RNA binding protein involved in pre-mRNA splicing, transport, and stability
+- Regulates gene expression post-transcriptionally
+- Mutations associated with neurodegenerative diseases
+Endostatin:
+- Natural inhibtor of angiogensis
+- Blocks formation of new blood vessels (tumor suppression)
+Myostatin:
+- Inhibits muscle growth
+- Mutations that inactivate myostatin lead to muscle hypertrophy
+8-OhDG:
+- Marker of oxidative DNA damage
+- Formed when DNA is attacked by reactive oxygen species
+- Elevated levels seen in cancer, neurodegenerative diseases, diabetes, and agings. Assess oxidative stress
+PARP1:
+- DNA repair enzyme
+- Detects DNA strand breaks and helps repair them by adding ADP-ribose chains to itself and other proteins
+
+--------------------
 Install important packages and libraries
 --------------------
 ```{r package}
@@ -22,4 +57,13 @@ library(broom)
 library(ggrepel)
 library(writexl)
 library(rlang)
+```
+
+--------------------
+Load data from excel
+--------------------
+```{r load}
+file_path <- ("/Users/summerjohnson/Documents/GitHub/UTMB-SIBDS/proteinparam.xlsx")
+data <- read_xlsx("/Users/summerjohnson/Documents/GitHub/UTMB-SIBDS/proteinparam.xlsx")
+head(data)
 ```
