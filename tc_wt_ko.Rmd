@@ -696,7 +696,7 @@ for (genetype in genetypes_list) {
       )
 
     # Create output folder
-    folder_path <- paste0("sig_in_graphs/", genetype, "/", comparison)
+    folder_path <- paste0("sig_inc_graphs/", genetype, "/", comparison)
     if (!dir.exists(folder_path)) {
       dir.create(folder_path, recursive = TRUE)
     }
@@ -708,6 +708,74 @@ for (genetype in genetypes_list) {
 }
 
 
+
+```
+
+--------------------
+Loop
+Significant Decreases by Gene Type - All Genes & All Comparisons
+--------------------
+```{r loop_significant_decreases}
+genetypes_list <- unique(tc_data$gene_type)
+
+comparisons_list <- c("wt0wt6", "wt0wt18", "ko0ko6", "ko0ko18", "ko0wt0", "ko0wt6", "ko0wt18")
+padj_list <- c("padj_wt0wt6", "padj_wt0wt18", "padj_ko0ko6", "padj_ko0ko18", "padj_ko0wt0", "padj_ko0wt6", "padj_ko0wt18")
+
+for (genetype in genetypes_list) {
+  for (i in seq_along(comparisons_list)) {
+    
+    comparison <- comparisons_list[i]
+    padj <- padj_list[i]
+    
+    # Filter data with dynamic column names using .data[[var]]
+    sig_dec_genetype_comparison <- tc_data %>%
+      filter(
+        gene_type == genetype,
+        .data[[padj]] < 0.05,
+        .data[[comparison]] < 0
+      ) %>%
+      select(
+        gene_type,
+        gene_name,
+        expression = !!sym(comparison),  # rename for consistent plotting
+        padj = !!sym(padj)
+      ) %>%
+      arrange(expression)
+
+    # Skip if no data
+    if (nrow(sig_dec_genetype_comparison) == 0) next
+    
+    # Plot
+    sig_dec_genetype_comparison_bp <- ggplot(sig_dec_genetype_comparison, aes(
+      x = reorder(gene_name, expression),
+      y = expression,
+      fill = gene_name
+    )) +
+      geom_bar(stat = "identity") +
+      coord_flip() +
+      theme_minimal() +
+      theme(
+        legend.position = "none",
+        axis.text.y = element_text(size = 7),
+        plot.margin = margin(10, 10, 10, 30)
+      ) +
+      labs(
+        x = "Gene",
+        y = paste0("Change in ", comparison),
+        title = paste("Plot of Decreasing", genetype, "Gene Expression for", comparison)
+      )
+
+    # Create output folder
+    folder_path <- paste0("sig_dec_graphs/", genetype, "/", comparison)
+    if (!dir.exists(folder_path)) {
+      dir.create(folder_path, recursive = TRUE)
+    }
+
+    # Save plot
+    filename <- paste0(folder_path, "/sig_dec_", genetype, "_", comparison, "bp.png")
+    ggsave(filename, plot = sig_dec_genetype_comparison_bp, bg = "white", width = 8, height = 12, dpi = 300)
+  }
+}
 
 ```
 
