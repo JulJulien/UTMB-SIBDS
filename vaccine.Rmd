@@ -12,6 +12,8 @@ NHS: Normal healthy subjects
 ASYM: Chagas disease patients with no clinical symptoms
 SYM: Chagas disease patients with clinical symptoms
 ID: Identification marker for 1 of the 42 patients studied
+chag_pres: person doesn't have or does have chagas disease (0 or 1)
+a_or_s: whether a person is asymptomatic or symptomatic
 
 --------------------
 Definitions
@@ -44,25 +46,27 @@ PARP1:
 Install important packages and libraries
 --------------------
 ```{r package}
-library(dplyr)
-library(readxl)
-library(corrplot)
-library(ggplot2)
-library(tidyverse)
-library(emmeans)
-library(ggpubr)
-library(gridExtra)
-library(tidyr)
 library(broom)
+library(corrplot)
+library(dplyr)
+library(emmeans)
+library(ggplot2)
+library(ggpubr)
 library(ggrepel)
-library(writexl)
+library(gridExtra)
+library(glmnet)
+library(gbm)
+library(ISLR)
+library(leaps)
+library(MASS)
+library(pROC)
+library(readxl)
 library(rlang)
 library(randomForest)
-library(glmnet)
-library(leaps)
-library(gbm)
+library(tidyverse)
+library(tidyr)
 library(tree)
-library(ISLR)
+library(writexl)
 ```
 
 --------------------
@@ -74,7 +78,8 @@ data <- read_xlsx("/Users/summerjohnson/Documents/GitHub/UTMB-SIBDS/proteinparam
 
 data <- data %>%
   pivot_wider(names_from = Moleculae, values_from = c(Serum, Plasma),
-              names_glue = "{Moleculae}_{.value}")
+              names_glue = "{Moleculae}_{.value}") 
+data <- data[, -1]
 ```
 
 
@@ -82,15 +87,72 @@ data <- data %>%
 EDA
 --------------------
 ``` {r EDA}
+
+#Summarize data
 summary(data)
 
-boxplot(Copeptin_Serum ~ Symptom, data = data)
-kruskal.test(Copeptin_Serum ~ Symptom, data = wide_data)
+#Visualize which biomarkers seperate groups (chagas vs no chagas) well
+df_long <- data %>%
+  pivot_longer(cols = ends_with("_Serum") | ends_with("_Plasma"),
+               names_to = "marker",
+               values_to = "value")
+
+plot_eda <- ggplot(df_long, aes(x = factor(chag_pres), y = value, fill = factor(chag_pres))) +
+  geom_boxplot() +
+  facet_wrap(~ marker, scales = "free") +
+  theme_minimal()
+
+
+```
+
+--------------------
+Can a biomarker correctly detect whether or not someone has chagas?
+*ROC, AUC, LASSO*
+--------------------
+``` {r sensspec}
+
+#Linear model
+lda.mod <- lda(Symptom ~ ., data = data)
+lda.mod
+
+#LDA prediction
+lda.pred <- predict(lda.mod, data)
+lda.pred.class <- lda.pred$class
+table(lda.pred.class, data$Symptom) 
+lda.detail <- cbind(as.character(lda.pred$class), round(lda.pred$posterior,8))
+
+#Plot LDA model
+plot(lda.mod)
+
+#ataframe with first two discriminants
+plot_data <- data.frame(LD1 = lda.pred$x[,1],
+                        LD2 = lda.pred$x[,2],
+                        Group = data$Symptom)
+
+#plotting seperation with first two discriminants
+ggplot(plot_data, aes(x = LD1, y = LD2, color = Group)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(title = "LDA: Projection onto LD1 and LD2",
+       x = "Linear Discriminant 1",
+       y = "Linear Discriminant 2") +
+  theme_minimal() +
+  theme(text = element_text(size=14))
+
+#Which biomarkers contribute the most?
+coef_df <- as.data.frame(lda.mod$scaling)
+coef_df$Variable <- rownames(coef_df)
+
+#LD1
+coef_df[order(abs(coef_df$LD1), decreasing = TRUE), c("Variable", "LD1")]
+
+#LD2
+coef_df[order(abs(coef_df$LD2), decreasing = TRUE), c("Variable", "LD2")]
 
 ```
 
 --------------------
 Can we predict whether a participant is Asymptomatic or Symptomatic based on the different serum values??
+*Random Forest, bagging, boosting*
 --------------------
 ``` {r copepserum}
 
