@@ -76,10 +76,17 @@ Load data from excel
 file_path <- ("/Users/summerjohnson/Documents/GitHub/UTMB-SIBDS/proteinparam.xlsx")
 data <- read_xlsx("/Users/summerjohnson/Documents/GitHub/UTMB-SIBDS/proteinparam.xlsx")
 
+#Create columns for each protein parameter and test, new column ordinal chagas present
 data <- data %>%
   pivot_wider(names_from = Moleculae, values_from = c(Serum, Plasma),
-              names_glue = "{Moleculae}_{.value}") 
-data <- data[, -1]
+              names_glue = "{Moleculae}_{.value}") %>%
+  mutate(
+    chag = case_when(
+      Symptom == "NHS" ~ 0, 
+      Symptom == "ASYM" | Symptom == "SYM" ~ 1,
+      TRUE ~ NA_real_
+    )
+  )
 ```
 
 
@@ -106,10 +113,55 @@ plot_eda <- ggplot(df_long, aes(x = factor(chag_pres), y = value, fill = factor(
 ```
 
 --------------------
+Meeting
+Can each serum level predict whether or not someone has chagas disease?
+- logistic regression (only two outcomes)
+- overfitting (ROC and AUC)
+- two most important predictors log reg 
+*logistic regression, ROC, AUC*
+--------------------
+``` {r logreg}
+log.reg <- glm(chag ~ HnRNPA1_Serum, data = data, family = "binomial")
+summary(log.reg)
+
+#Odds ratios
+exp(coef(log.reg))
+
+#Confidence Intervals 
+exp(confint(log.reg))
+
+#Predict probabilities between 0 and 1
+pred.prob <- predict(log.reg, type = "response")
+
+#Predict class
+pred.class <- ifelse(predict(log.reg, type = "response") > 0.5, 1, 0)
+
+#AUC
+roc_log <- roc(data$chag, predict(log.reg, type = "response"))
+auc(roc_log)
+plot(roc_log)
+
+#Regularization
+set.seed(123)
+x <- cbind(HnRNPA1_Serum = data$HnRNPA1_Serum, dummy = rnorm(nrow(data), mean = 0, sd = 1e-6))
+x <- as.matrix(x)
+y <- as.factor(data$chag)
+
+cvfit <- cv.glmnet(x, y, family = "binomial", alpha = 0)
+plot(cvfit)
+coef(cvfit, s = "lambda.min")
+
+
+```
+
+--------------------
 Can a biomarker correctly detect whether or not someone has chagas?
-*ROC, AUC, LASSO*
+*LDA*
 --------------------
 ``` {r sensspec}
+
+#Remove ID for LDA
+data <- data[, -1]
 
 #Linear model
 lda.mod <- lda(Symptom ~ ., data = data)
