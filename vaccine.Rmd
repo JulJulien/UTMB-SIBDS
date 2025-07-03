@@ -5,6 +5,9 @@ date: "2025-07-01"
 output: html_document
 ---
 
+multinomial logisitc regression
+
+
 --------------------
 Key
 --------------------
@@ -85,6 +88,11 @@ data <- data %>%
       Symptom == "NHS" ~ 0, 
       Symptom == "ASYM" | Symptom == "SYM" ~ 1,
       TRUE ~ NA_real_
+    ),
+    sym = case_when(
+      Symptom == "ASYM" ~ 0,
+      Symptom == "SYM" ~ 1,
+      TRUE ~ NA_real_
     )
   )
 ```
@@ -113,46 +121,90 @@ plot_eda <- ggplot(df_long, aes(x = factor(chag_pres), y = value, fill = factor(
 ```
 
 --------------------
-Meeting
-Can each serum level predict whether or not someone has chagas disease?
-- logistic regression (only two outcomes)
-- overfitting (ROC and AUC)
-- two most important predictors log reg 
+Can each protein level predict whether or not someone has chagas disease?
 *logistic regression, ROC, AUC*
 --------------------
-``` {r logreg}
-log.reg <- glm(chag ~ HnRNPA1_Serum, data = data, family = "binomial")
-summary(log.reg)
+``` {r user}
+#Loop for each protein and sample
+run_logistic_analysis <- function(data, protein_name, sample_type = c("Serum", "Plasma")) {
+  sample_type <- match.arg(sample_type)
+  
+  #Construct the column name
+  var_name <- paste0(protein_name, "_", sample_type)
+  
+  #Check if the variable exists
+  if (!var_name %in% names(data)) {
+    stop(paste("Variable", var_name, "not found in the data."))
+  }
+  
+  #Formula for logistic regression
+  formula <- as.formula(paste("chag ~", var_name))
+  
+  #Fit logistic regression model
+  log.reg <- glm(formula, data = data, family = "binomial")
+  print(summary(log.reg))
+  
+  #Odds ratios and CI
+  cat("\nOdds Ratios:\n")
+  print(exp(coef(log.reg)))
+  
+  cat("\n95% CI for Odds Ratios:\n")
+  print(exp(confint(log.reg)))
+  
+  #Predicted probabilities and classes
+  pred.prob <- predict(log.reg, type = "response")
+  pred.class <- ifelse(pred.prob > 0.5, 1, 0)
+  
+  #ROC and AUC
+  roc_log <- roc(data$chag, pred.prob)
+  cat("\nAUC:", auc(roc_log), "\n")
+  plot(roc_log, main = paste("ROC Curve -", var_name))
+  
+  #Regularization with cv.glmnet (L2 penalty: alpha = 0)
+  set.seed(123)
+  x <- cbind(var = data[[var_name]], dummy = rnorm(nrow(data), 0, 1e-6))
+  x <- as.matrix(x)
+  y <- as.factor(data$chag)
+  
+  cvfit <- cv.glmnet(x, y, family = "binomial", alpha = 0)
+  plot(cvfit, main = paste("CV Error -", var_name))
+  cat("\nRegularized Coefficients (lambda.min):\n")
+  print(coef(cvfit, s = "lambda.min"))
+  
+  invisible(list(model = log.reg, auc = auc(roc_log), cv_model = cvfit))
+}
 
-#Odds ratios
-exp(coef(log.reg))
-
-#Confidence Intervals 
-exp(confint(log.reg))
-
-#Predict probabilities between 0 and 1
-pred.prob <- predict(log.reg, type = "response")
-
-#Predict class
-pred.class <- ifelse(predict(log.reg, type = "response") > 0.5, 1, 0)
-
-#AUC
-roc_log <- roc(data$chag, predict(log.reg, type = "response"))
-auc(roc_log)
-plot(roc_log)
-
-#Regularization
-set.seed(123)
-x <- cbind(HnRNPA1_Serum = data$HnRNPA1_Serum, dummy = rnorm(nrow(data), mean = 0, sd = 1e-6))
-x <- as.matrix(x)
-y <- as.factor(data$chag)
-
-cvfit <- cv.glmnet(x, y, family = "binomial", alpha = 0)
-plot(cvfit)
-coef(cvfit, s = "lambda.min")
-
+#Run logistic regression for each protein and sample
+run_logistic_analysis(data, protein_name = "Copeptin", sample_type = "Serum")
+run_logistic_analysis(data, protein_name = "Copeptin", sample_type = "Plasma")
+run_logistic_analysis(data, protein_name = "HnRNPA1", sample_type = "Serum")
+run_logistic_analysis(data, protein_name = "HnRNPA1", sample_type = "Plasma")
+run_logistic_analysis(data, protein_name = "Endostatin", sample_type = "Serum")
+run_logistic_analysis(data, protein_name = "Endostatin", sample_type = "Plasma")
+run_logistic_analysis(data, protein_name = "Myostatin", sample_type = "Serum")
+run_logistic_analysis(data, protein_name = "Myostatin", sample_type = "Plasma")
+run_logistic_analysis(data, protein_name = "etOhDG", sample_type = "Serum")
+run_logistic_analysis(data, protein_name = "etOhDG", sample_type = "Plasma")
+run_logistic_analysis(data, protein_name = "PARP1", sample_type = "Serum")
+run_logistic_analysis(data, protein_name = "PARP1", sample_type = "Plasma")
 
 ```
+--------------------
+AUC Results (with vs without chagas)
+--------------------
+Copeptin Serum: 1
+Copeptin Plasma: 1
+HnRNPA1 Serum:0.9888889
+HnRNPA1 Plasma:0.9847222
+Endostatin Serum:0.9222222
+Endostatin Plasma:0.9513889
+Myostatin Serum:0.75
+Myostatin Plasma:0.7013889
+8-OhDG Serum:0.9972222
+8-OhDG Plasma:1
+PARP1 Serum:1
+PARP1 Plasma:1
+
 
 --------------------
 Can a biomarker correctly detect whether or not someone has chagas?
