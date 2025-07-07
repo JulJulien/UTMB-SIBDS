@@ -342,7 +342,109 @@ We can conclude that HnRNPA1 and PARP1 levels are best used as diagnostic tools 
 
 
 
+``` {r graphing}
 
+#Create a tidy dataframe of AUC results
+diagnosis_auc <- tribble(
+  ~Biomarker, ~Sample, ~AUC,
+  "Copeptin", "Serum", 1,
+  "Copeptin", "Plasma", 1,
+  "HnRNPA1", "Serum", 0.9888889,
+  "HnRNPA1", "Plasma", 0.9847222,
+  "Endostatin", "Serum", 0.9222222,
+  "Endostatin", "Plasma", 0.9513889,
+  "Myostatin", "Serum", 0.75,
+  "Myostatin", "Plasma", 0.7013889,
+  "8-OhDG", "Serum", 0.9972222,
+  "8-OhDG", "Plasma", 1,
+  "PARP1", "Serum", 1,
+  "PARP1", "Plasma", 1
+)
+
+prognosis_auc <- tribble(
+  ~Biomarker, ~Sample, ~AUC,
+  "Copeptin", "Serum", 0.9822222,
+  "Copeptin", "Plasma", 1,
+  "HnRNPA1", "Serum", 0.7066667,
+  "HnRNPA1", "Plasma", 0.6133333,
+  "Endostatin", "Serum", 0.8911111,
+  "Endostatin", "Plasma", 0.9155556,
+  "Myostatin", "Serum", 1,
+  "Myostatin", "Plasma", 0.9955556,
+  "8-OhDG", "Serum", 0.9911111,
+  "8-OhDG", "Plasma", 0.8355556,
+  "PARP1", "Serum", 0.6044444,
+  "PARP1", "Plasma", 0.5244444
+)
+
+#Categorize AUC levels
+auc_category <- function(x) {
+  case_when(
+    x >= 0.9 ~ "Excellent (≥ 0.9)",
+    x >= 0.8 ~ "Good (0.8–0.9)",
+    TRUE ~ "Moderate/Low (< 0.8)"
+  )
+}
+
+#Category columns
+diagnosis_auc <- diagnosis_auc %>%
+  mutate(Category = auc_category(AUC),
+         Group = "With vs W/o Chagas")
+
+prognosis_auc <- prognosis_auc %>%
+  mutate(Category = auc_category(AUC),
+         Group = "Asym vs Sym")
+
+#Combine
+combined_auc <- bind_rows(diagnosis_auc, prognosis_auc)
+
+#Visualize
+ggplot(combined_auc, aes(x = reorder(paste(Biomarker, Sample, sep = " "), AUC), y = AUC, fill = Category)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~Group, scales = "free_y") +
+  scale_fill_manual(values = c("Excellent (≥ 0.9)" = "#1b9e77",
+                               "Good (0.8–0.9)" = "#d95f02",
+                               "Moderate/Low (< 0.8)" = "#7570b3")) +
+  labs(title = "AUC Values for Biomarkers in Chagas Disease",
+       subtitle = "Determining Diagnostic vs Prognostic Variables for Chagas Disease",
+       x = "Biomarker",
+       y = "AUC",
+       fill = "AUC Category") +
+  theme_minimal(base_size = 12)
+
+# Classification vector
+classification_df <- tribble(
+  ~Biomarker, ~Classification,
+  "Copeptin", "Both",
+  "HnRNPA1", "Diagnostic",
+  "Endostatin", "Both",
+  "Myostatin", "Prognostic",
+  "8-OhDG", "Both",
+  "PARP1", "Diagnostic"
+)
+
+# Merge classification into AUC data
+combined_auc_labeled <- combined_auc %>%
+  left_join(classification_df, by = "Biomarker")
+
+# Plot with biomarker role
+ggplot(combined_auc_labeled, aes(x = reorder(paste(Biomarker, Sample, sep = " "), AUC), 
+                                 y = AUC, fill = Classification)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~Group, scales = "free_y") +
+  scale_fill_manual(values = c("Diagnostic" = "#1b9e77",
+                               "Prognostic" = "#d95f02",
+                               "Both" = "#7570b3")) +
+  labs(title = "AUC Values for Biomarkers in Chagas Disease",
+       subtitle = "Biomarkers classified as Diagnostic, Prognostic, or Both",
+       x = "Biomarker",
+       y = "AUC",
+       fill = "Biomarker Role") +
+  theme_minimal(base_size = 12)
+
+```
 
 
 
