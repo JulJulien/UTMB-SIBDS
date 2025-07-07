@@ -5,9 +5,6 @@ date: "2025-07-01"
 output: html_document
 ---
 
-multinomial logisitc regression
-
-
 --------------------
 Key
 --------------------
@@ -46,6 +43,46 @@ PARP1:
 - Detects DNA strand breaks and helps repair them by adding ADP-ribose chains to itself and other proteins
 
 --------------------
+AUC Results (with vs without chagas)
+--------------------
+Copeptin Serum: 1
+Copeptin Plasma: 1
+HnRNPA1 Serum:0.9888889
+HnRNPA1 Plasma:0.9847222
+Endostatin Serum:0.9222222
+Endostatin Plasma:0.9513889
+Myostatin Serum:0.75
+Myostatin Plasma:0.7013889
+8-OhDG Serum:0.9972222
+8-OhDG Plasma:1
+PARP1 Serum:1
+PARP1 Plasma:1
+
+Our model shows that Copeptin Serum/Plasma levels, HnRNPA1 Serum/Plasma levels, Endostatin Serum/Plasma levels, 8-OHDG Serum/Plasma levels, and PARP1 Serum/Plasma levels are able to discern between someone with or without chagas disease. 
+
+--------------------
+AUC Results (asymptomatic vs symptomatic)
+--------------------
+Copeptin Serum: 0.9822222
+Copeptin Plasma: 1
+HnRNPA1 Serum:0.7066667
+HnRNPA1 Plasma:0.6133333
+Endostatin Serum:0.8911111
+Endostatin Plasma:0.9155556
+Myostatin Serum: 1
+Myostatin Plasma:0.9955556
+8-OhDG Serum:0.9911111
+8-OhDG Plasma:0.8355556
+PARP1 Serum:0.6044444
+PARP1 Plasma:0.5244444
+
+
+Our model shows that Copeptin Serum/Plasma levels, Endostatin Serum/Plasma, Myostatin Serum/Plasma, 8-OhDG Serum/Plasma levels are able to discern between someone showing symptoms of chagas disease and someone being asymptomatic.
+
+We can conclude that HnRNPA1 and PARP1 levels are best used as diagnostic tools for diagnosing a patient with Chagas disease while Copeptin, Endostatin, and 8-OhDG levels should remain as prognostic variables that can be seen in individuals with Chagas disease. 
+
+
+--------------------
 Install important packages and libraries
 --------------------
 ```{r package}
@@ -62,6 +99,7 @@ library(gbm)
 library(ISLR)
 library(leaps)
 library(MASS)
+library(nnet)
 library(pROC)
 library(readxl)
 library(rlang)
@@ -119,6 +157,8 @@ plot_eda <- ggplot(df_long, aes(x = factor(chag_pres), y = value, fill = factor(
 
 
 ```
+
+
 
 --------------------
 Can each protein level predict whether or not someone has chagas disease?
@@ -204,6 +244,112 @@ Myostatin Plasma:0.7013889
 8-OhDG Plasma:1
 PARP1 Serum:1
 PARP1 Plasma:1
+
+Our model shows that Copeptin Serum/Plasma levels, HnRNPA1 Serum/Plasma levels, Endostatin Serum/Plasma levels, 8-OHDG Serum/Plasma levels, and PARP1 Serum/Plasma levels are able to discern between someone with or without chagas disease. 
+
+
+--------------------
+Can each protein level predict whether or not someone is symptomatic?
+*logistic regression, ROC, AUC*
+--------------------
+``` {r newlog}
+run_logistic_analysis_sym <- function(data, protein_name, sample_type = c("Serum", "Plasma")) {
+  sample_type <- match.arg(sample_type)
+  var_name <- paste0(protein_name, "_", sample_type)
+  
+  if (!var_name %in% names(data)) {
+    stop(paste("Variable", var_name, "not found in the data."))
+  }
+  
+  # Remove rows with NA in outcome or predictor
+  clean_data <- data[!is.na(data[[var_name]]) & !is.na(data$sym), ]
+  
+  if (nrow(clean_data) < 5) {
+    warning(paste("Too few complete cases for", var_name))
+    return(NULL)
+  }
+  
+  # Logistic regression
+  formula <- as.formula(paste("sym ~", var_name))
+  log.reg <- glm(formula, data = clean_data, family = "binomial")
+  print(summary(log.reg))
+  
+  # Odds ratios and confidence intervals
+  cat("\nOdds Ratios:\n")
+  print(exp(coef(log.reg)))
+  
+  cat("\n95% CI for Odds Ratios:\n")
+  print(exp(confint(log.reg)))
+  
+  # Predict probabilities
+  pred.prob <- predict(log.reg, type = "response")
+  
+  # ROC and AUC
+  roc_log <- roc(clean_data$sym, pred.prob)
+  cat("\nAUC:", auc(roc_log), "\n")
+  plot(roc_log, main = paste("ROC Curve - Symptomatic ~", var_name))
+  
+  # Ridge regularization (dummy added to avoid single-column matrix issues)
+  set.seed(123)
+  x <- cbind(var = clean_data[[var_name]], dummy = rnorm(nrow(clean_data), 0, 1e-6))
+  x <- as.matrix(x)
+  y <- as.factor(clean_data$sym)
+  
+  cvfit <- cv.glmnet(x, y, family = "binomial", alpha = 0)
+  plot(cvfit, main = paste("CV Error (Ridge) -", var_name))
+  cat("\nRegularized Coefficients (lambda.min):\n")
+  print(coef(cvfit, s = "lambda.min"))
+  
+  invisible(list(model = log.reg, auc = auc(roc_log), cv_model = cvfit))
+}
+
+
+# Serum and Plasma for all proteins, outcome: SYM
+run_logistic_analysis_sym(data, "Copeptin", "Serum")
+run_logistic_analysis_sym(data, "Copeptin", "Plasma")
+run_logistic_analysis_sym(data, "HnRNPA1", "Serum")
+run_logistic_analysis_sym(data, "HnRNPA1", "Plasma")
+run_logistic_analysis_sym(data, "Endostatin", "Serum")
+run_logistic_analysis_sym(data, "Endostatin", "Plasma")
+run_logistic_analysis_sym(data, "Myostatin", "Serum")
+run_logistic_analysis_sym(data, "Myostatin", "Plasma")
+run_logistic_analysis_sym(data, "etOhDG", "Serum")
+run_logistic_analysis_sym(data, "etOhDG", "Plasma")
+run_logistic_analysis_sym(data, "PARP1", "Serum")
+run_logistic_analysis_sym(data, "PARP1", "Plasma")
+
+```
+--------------------
+AUC Results (asymptomatic vs symptomatic)
+--------------------
+Copeptin Serum: 0.9822222
+Copeptin Plasma: 1
+HnRNPA1 Serum:0.7066667
+HnRNPA1 Plasma:0.6133333
+Endostatin Serum:0.8911111
+Endostatin Plasma:0.9155556
+Myostatin Serum: 1
+Myostatin Plasma:0.9955556
+8-OhDG Serum:0.9911111
+8-OhDG Plasma:0.8355556
+PARP1 Serum:0.6044444
+PARP1 Plasma:0.5244444
+
+
+Our model shows that Copeptin Serum/Plasma levels, Endostatin Serum/Plasma, Myostatin Serum/Plasma, 8-OhDG Serum/Plasma levels are able to discern between someone showing symptoms of chagas disease and someone being asymptomatic.
+
+We can conclude that HnRNPA1 and PARP1 levels are best used as diagnostic tools for diagnosing a patient with Chagas disease while Copeptin, Endostatin, and 8-OhDG levels should remain as prognostic variables that can be seen in individuals with Chagas disease. 
+
+
+
+
+
+
+
+
+
+
+**OLD STUFF**
 
 
 --------------------
