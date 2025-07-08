@@ -141,20 +141,76 @@ EDA
 --------------------
 ``` {r EDA}
 
-#Summarize data
-summary(data)
+marker_labels <- c(
+  "Copeptin_Serum" = "Copeptin (Serum)",
+  "Copeptin_Plasma" = "Copeptin (Plasma)",
+  "HnRNPA1_Serum" = "HnRNPA1 (Serum)",
+  "HnRNPA1_Plasma" = "HnRNPA1 (Plasma)",
+  "Endostatin_Serum" = "Endostatin (Serum)",
+  "Endostatin_Plasma" = "Endostatin (Plasma)",
+  "etOhDG_Serum" = "8-OhDG (Serum)",
+  "etOhDG_Plasma" = "8-OhDG (Plasma)",
+  "Myostatin_Serum" = "Myostatin (Serum)",
+  "Myostatin_Plasma" = "Myostatin (Plasma)",
+  "PARP1_Serum" = "PARP1 (Serum)",
+  "PARP1_Plasma" = "PARP1 (Plasma)"
+)
 
-#Visualize which biomarkers seperate groups (chagas vs no chagas) well
+
+#Chag boxplot
 df_long <- data %>%
   pivot_longer(cols = ends_with("_Serum") | ends_with("_Plasma"),
                names_to = "marker",
-               values_to = "value")
+               values_to = "value") 
 
-plot_eda <- ggplot(df_long, aes(x = factor(chag_pres), y = value, fill = factor(chag_pres))) +
+chag_labels <- c("0" = "No Chagas", "1" = "Has Chagas")
+
+ggplot(df_long, aes(x = factor(chag), y = value, fill = factor(chag))) +
   geom_boxplot() +
-  facet_wrap(~ marker, scales = "free") +
-  theme_minimal()
+  facet_wrap(~ marker, scales = "free", labeller = labeller(marker = marker_labels)) +
+  scale_fill_manual(
+    name = "Chagas Status",
+    values = c("0" = "#FF61CC", "1" = "#00A9FF"),  
+    labels = chag_labels        
+  ) +
+  labs(
+    x = "Chagas Status",
+    y = "Protein Level",
+    fill = "Symptom Status"   
+  ) +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "cornsilk", color = NA),
+    panel.background = element_rect(fill = "cornsilk", color = NA)
+  )
 
+#Sym boxplot
+df_long2 <- data %>%
+  pivot_longer(cols = ends_with("_Serum") | ends_with("_Plasma"),
+               names_to = "marker",
+               values_to = "value") %>%
+  filter(sym == 0 | sym == 1)
+
+sym_labels <- c("0" = "Asymptomatic", "1" = "Symptomatic")
+
+ggplot(df_long2, aes(x = factor(sym), y = value, fill = factor(sym))) +
+  geom_boxplot() +
+  facet_wrap(~ marker, scales = "free", labeller = labeller(marker = marker_labels)) +
+  scale_fill_manual(
+    name = "Chagas Symptom Status",
+    values = c("0" = "#1ABC9C", "1" = "#FF5733"),  
+    labels = sym_labels        
+  ) +
+  labs(
+    x = "Chagas Symptom Status",
+    y = "Protein Level",
+    fill = "Symptom Status"   
+  ) +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "cornsilk", color = NA),
+    panel.background = element_rect(fill = "cornsilk", color = NA)
+  )
 
 ```
 
@@ -403,15 +459,19 @@ ggplot(combined_auc, aes(x = reorder(paste(Biomarker, Sample, sep = " "), AUC), 
   geom_col() +
   coord_flip() +
   facet_wrap(~Group, scales = "free_y") +
-  scale_fill_manual(values = c("Excellent (≥ 0.9)" = "#1b9e77",
-                               "Good (0.8–0.9)" = "#d95f02",
-                               "Moderate/Low (< 0.8)" = "#7570b3")) +
+  scale_fill_manual(values = c("Excellent (≥ 0.9)" = "#D14E72FF",
+                               "Good (0.8–0.9)" = "#FBA238FF",
+                               "Moderate/Low (< 0.8)" = "#F7E225FF")) +
   labs(title = "AUC Values for Biomarkers in Chagas Disease",
-       subtitle = "Determining Diagnostic vs Prognostic Variables for Chagas Disease",
+       subtitle = "Predictability of Protein Parameters for Chagas Disease",
        x = "Biomarker",
        y = "AUC",
        fill = "AUC Category") +
-  theme_minimal(base_size = 12)
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "cornsilk", color = NA),
+    panel.background = element_rect(fill = "cornsilk", color = NA)
+  )
 
 # Classification vector
 classification_df <- tribble(
@@ -434,15 +494,19 @@ ggplot(combined_auc_labeled, aes(x = reorder(paste(Biomarker, Sample, sep = " ")
   geom_col() +
   coord_flip() +
   facet_wrap(~Group, scales = "free_y") +
-  scale_fill_manual(values = c("Diagnostic" = "#1b9e77",
-                               "Prognostic" = "#d95f02",
-                               "Both" = "#7570b3")) +
+  scale_fill_manual(values = c("Diagnostic" = "#2d0594FF",
+                               "Prognostic" = "#9512A1FF",
+                               "Both" = "#DD5E66FF")) +
   labs(title = "AUC Values for Biomarkers in Chagas Disease",
        subtitle = "Biomarkers classified as Diagnostic, Prognostic, or Both",
        x = "Biomarker",
        y = "AUC",
        fill = "Biomarker Role") +
-  theme_minimal(base_size = 12)
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "cornsilk", color = NA),
+    panel.background = element_rect(fill = "cornsilk", color = NA)
+  )
 
 ```
 
