@@ -114,8 +114,8 @@ library(writexl)
 Load data from excel
 --------------------
 ```{r load}
-file_path <- ("/Users/summerjohnson/Documents/GitHub/UTMB-SIBDS/proteinparam.xlsx")
-data <- read_xlsx("/Users/summerjohnson/Documents/GitHub/UTMB-SIBDS/proteinparam.xlsx")
+file_path <- ("C:/Users/cajgarza/Documents/UTMB-SIBDS/proteinparam.xlsx")
+data <- read_xlsx("C:/Users/cajgarza/Documents/UTMB-SIBDS/proteinparam.xlsx")
 
 #Create columns for each protein parameter and test, new column ordinal chagas present
 data <- data %>%
@@ -447,13 +447,93 @@ ggplot(combined_auc_labeled, aes(x = reorder(paste(Biomarker, Sample, sep = " ")
 ```
 
 
+```{r Mitochondrial DNA dataframe}
 
+mdata <- read_xlsx("MitochondrialDNA.xlsx")
 
+# Create a "disease" column for asym,sym (1) and NHS (0) 
+mdata <- mdata %>%
+  mutate(disease = case_when(
+    Symptom == "NHS" ~ 0, 
+    Symptom == "Asymptomatic C" ~ 1,
+    Symptom == "Symptomatic C" ~ 1
+    )
+  )
 
+# These lists will be used for loops :D
+list_DNA_Types <- c("mtND1", "mtND5", "mtATP6", "mtCOII", "mtCytB")
+list_Group_Types <- c("NHS", "Asymptomatic C", "Symptomatic C")
+
+```
+
+```{r Boxplots Mitochondrial DNA}
+
+# For shiggles >_<
+p <- list()
+i = 1
+
+for(DNA_Type in list_DNA_Types){
+    p[[i]] <- ggplot(mdata, aes_string(x = "Symptom", y = DNA_Type)) +
+      geom_boxplot() +
+      labs(title = paste(DNA_Type),
+           y = "copies/ml") +
+      theme_minimal() +
+      scale_fill_brewer(palette = "Set1") +
+      theme(text = element_text(size=10))
+    i <- i+1
+}
+grid.arrange(grobs = p, ncol = 2)
+
+```
+
+-------------------------------------------------
+Can we predict whether someone has Chagas Disease
+based on the DNA Type's copies/ml ?
+-------------------------------------------------
+```{r Logistic Regression Mitochondrial DNA }
+
+# Empty list to store ggplots
+plot_list <- list()
+
+# Logistic Regression where DNA Type is the predictor of disease
+for (DNA_Type in list_DNA_Types) {
+  formula_text <- paste("disease ~", DNA_Type)
+  mit_model <- glm(as.formula(formula_text), data = mdata, family = binomial)
+  prob <- predict(mit_model, type = "response")
+  roc_obj <- roc(mdata$disease, prob)
+  
+  # Generate ggplot ROC plot
+  roc_plot <- ggroc(roc_obj) +
+    ggtitle(paste(DNA_Type, "ROC")) +
+    theme_minimal()
+ 
+  # Calculate AUC
+  auc_value <- auc(roc_obj)
+  auc_message <- paste0(DNA_Type," AUC: ", auc_value)
+  print(auc_message)
+  
+  # Plot ROC
+  plot(roc_plot)
+  
+  # Plot all the ROCs
+  plot_list[[DNA_Type]] <- roc_plot
+}
+
+grid.arrange(grobs = plot_list, ncol = 4)
+```
+================================================
+Logisitc Regression AUC Results:
+[1] "mtND1 AUC: 0.836111111111111"
+[1] "mtND5 AUC: 0.583333333333333"
+[1] "mtATP6 AUC: 0.813888888888889"
+[1] "mtCOII AUC: 0.441666666666667"
+[1] "mtCytB AUC: 0.544444444444444"
+
+Results: 
+mtND1 & mtATP6 AUC > 0.8
+================================================
 
 **OLD STUFF**
-
-
 --------------------
 Can a biomarker correctly detect whether or not someone has chagas?
 *LDA*
@@ -501,7 +581,6 @@ coef_df[order(abs(coef_df$LD1), decreasing = TRUE), c("Variable", "LD1")]
 coef_df[order(abs(coef_df$LD2), decreasing = TRUE), c("Variable", "LD2")]
 
 ```
-
 --------------------
 Can we predict whether a participant is Asymptomatic or Symptomatic based on the different serum values??
 *Random Forest, bagging, boosting*

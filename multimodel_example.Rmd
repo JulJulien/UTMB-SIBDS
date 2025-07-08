@@ -1,0 +1,88 @@
+
+```{r install packages}
+
+#install.packages("multilevelmod")
+#install.packages("GGally")
+#install.packages("lmerTest")
+library("multilevelmod")
+```
+
+
+```{r}
+riesby
+
+#use condensed version for analysis
+dat = read.csv("riesby.csv", header = T)
+
+#Number of subjects
+length(unique(dat$id))
+
+boxplot(hamd~week, data=dat)
+
+```
+
+
+```{r}
+library(tidyr)
+
+# ggpairs only works in wide format
+dat_wide <- dat |> 
+  pivot_wider(
+    names_from = week,
+    values_from = hamd
+  )
+
+library(GGally)
+library(dplyr)
+dtpair = dat_wide %>% select("0", "1", "2", "3", "4", "5")
+ggpairs(dtpair)
+
+```
+
+```{r}
+#line plots for all subjects
+interaction.plot(dat$week, dat$id, dat$hamd, legend = F, col=c(1:nrow(dat_wide)))
+
+#stratify by endog
+end0 = subset(dat, endog = 0)
+end1 = subset(dat, endog = 1)
+interaction.plot(end0$week, end0$id, end0$hamd, legend = F, col=c(1:nrow(end0)))
+interaction.plot(end1$week, end1$id, end1$hamd, legend = F, col=c(1:nrow(end1)))
+
+library(lme4)
+library(lmerTest)
+
+#include intercept and week as random, use REML method (Default)
+hamd_full.mod <- lmer(hamd ~ week + (1 + week | id), data = dat, REML = TRUE)
+summary(hamd_full.mod)
+
+#include intercept as random, use REML method (Default)
+hamd_rint.mod <- lmer(hamd ~ week + (1 | id), data = dat, REML = TRUE)
+summary(hamd_rint.mod)
+
+# compare the nested models
+anova(hamd_rint.mod, hamd_full.mod, refit = T)
+
+
+
+
+
+```
+
+
+```{r}
+dental = read.csv("dental data.csv", header = T)
+
+#Read data into R, construct data frame for linear mixed model analysis
+dental = dental %>%
+  mutate(
+    id = as.factor(id),
+    sex = as.factor(sex),
+    newid = as.factor(newid),
+  )
+
+
+
+```
+
+
