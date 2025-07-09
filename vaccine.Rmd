@@ -318,6 +318,7 @@ run_logistic_analysis_sym(data, "etOhDG", "Plasma")
 run_logistic_analysis_sym(data, "PARP1", "Serum")
 run_logistic_analysis_sym(data, "PARP1", "Plasma")
 
+
 ```
 --------------------
 AUC Results (asymptomatic vs symptomatic)
@@ -460,6 +461,13 @@ mdata <- mdata %>%
     )
   )
 
+# Create a "sym" column for asym (0) and sym (1)
+mdata <- mdata %>%
+  mutate(sym = case_when(
+    Symptom == "Asymptomatic C" ~ 0, 
+    Symptom == "Symptomatic C" ~ 1
+  ))
+
 # These lists will be used for loops :D
 list_DNA_Types <- c("mtND1", "mtND5", "mtATP6", "mtCOII", "mtCytB")
 list_Group_Types <- c("NHS", "Asymptomatic C", "Symptomatic C")
@@ -532,6 +540,44 @@ Logisitc Regression AUC Results:
 Results: 
 mtND1 & mtATP6 AUC > 0.8
 ================================================
+
+-------------------------------------------------
+Can we predict whether someone is Symptomatic or Asymptomatic
+based on the DNA Type's copies/ml ?
+-------------------------------------------------
+```{r Logistic Regression Mitochondrial DNA }
+
+# Empty list to store ggplots
+plot_list <- list()
+
+# Logistic Regression where DNA Type is the predictor of disease
+for (DNA_Type in list_DNA_Types) {
+  formula_text <- paste("disease ~", DNA_Type)
+  mit_model <- glm(as.formula(formula_text), data = mdata, family = binomial)
+  prob <- predict(mit_model, type = "response")
+  roc_obj <- roc(mdata$disease, prob)
+  
+  # Generate ggplot ROC plot
+  roc_plot <- ggroc(roc_obj) +
+    ggtitle(paste(DNA_Type, "ROC")) +
+    theme_minimal()
+ 
+  # Calculate AUC
+  auc_value <- auc(roc_obj)
+  auc_message <- paste0(DNA_Type," AUC: ", auc_value)
+  print(auc_message)
+  
+  # Plot ROC
+  plot(roc_plot)
+  
+  # Plot all the ROCs
+  plot_list[[DNA_Type]] <- roc_plot
+}
+
+grid.arrange(grobs = plot_list, ncol = 4)
+```
+
+
 
 **OLD STUFF**
 --------------------

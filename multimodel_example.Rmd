@@ -7,7 +7,6 @@
 library("multilevelmod")
 ```
 
-
 ```{r}
 riesby
 
@@ -20,7 +19,6 @@ length(unique(dat$id))
 boxplot(hamd~week, data=dat)
 
 ```
-
 
 ```{r}
 library(tidyr)
@@ -63,12 +61,7 @@ summary(hamd_rint.mod)
 # compare the nested models
 anova(hamd_rint.mod, hamd_full.mod, refit = T)
 
-
-
-
-
 ```
-
 
 ```{r}
 dental = read.csv("dental data.csv", header = T)
