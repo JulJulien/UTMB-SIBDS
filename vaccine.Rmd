@@ -90,6 +90,7 @@ library(broom)
 library(corrplot)
 library(dplyr)
 library(emmeans)
+library(fmsb)
 library(ggplot2)
 library(ggpubr)
 library(ggrepel)
@@ -104,10 +105,12 @@ library(pROC)
 library(readxl)
 library(rlang)
 library(randomForest)
+library(scales)
 library(tidyverse)
 library(tidyr)
 library(tree)
 library(writexl)
+library(wesanderson)
 ```
 
 --------------------
@@ -138,6 +141,7 @@ data <- data %>%
 
 --------------------
 EDA
+- boxplots showing protein parameters mapped by symptom and presence of disease
 --------------------
 ``` {r EDA}
 
@@ -178,11 +182,7 @@ ggplot(df_long, aes(x = factor(chag), y = value, fill = factor(chag))) +
     y = "Protein Level",
     fill = "Symptom Status"   
   ) +
-  theme_minimal() +
-  theme(
-    plot.background = element_rect(fill = "cornsilk", color = NA),
-    panel.background = element_rect(fill = "cornsilk", color = NA)
-  )
+  theme_minimal() 
 
 #Sym boxplot
 df_long2 <- data %>%
@@ -206,11 +206,8 @@ ggplot(df_long2, aes(x = factor(sym), y = value, fill = factor(sym))) +
     y = "Protein Level",
     fill = "Symptom Status"   
   ) +
-  theme_minimal() +
-  theme(
-    plot.background = element_rect(fill = "cornsilk", color = NA),
-    panel.background = element_rect(fill = "cornsilk", color = NA)
-  )
+  theme_minimal() 
+  
 
 ```
 
@@ -397,7 +394,10 @@ Our model shows that Copeptin Serum/Plasma levels, Endostatin Serum/Plasma, Myos
 We can conclude that HnRNPA1 and PARP1 levels are best used as diagnostic tools for diagnosing a patient with Chagas disease while Copeptin, Endostatin, and 8-OhDG levels should remain as prognostic variables that can be seen in individuals with Chagas disease. 
 
 
-
+--------------------
+Graphing
+- graphing the AUC results
+--------------------
 ``` {r graphing}
 
 #Create a tidy dataframe of AUC results
@@ -459,19 +459,23 @@ ggplot(combined_auc, aes(x = reorder(paste(Biomarker, Sample, sep = " "), AUC), 
   geom_col() +
   coord_flip() +
   facet_wrap(~Group, scales = "free_y") +
-  scale_fill_manual(values = c("Excellent (≥ 0.9)" = "#D14E72FF",
-                               "Good (0.8–0.9)" = "#FBA238FF",
-                               "Moderate/Low (< 0.8)" = "#F7E225FF")) +
-  labs(title = "AUC Values for Biomarkers in Chagas Disease",
-       subtitle = "Predictability of Protein Parameters for Chagas Disease",
+  scale_fill_manual(values = wes_palette("AsteroidCity1", n = 3, type = "discrete")) +
+  labs(title = "Predictability of Protein Parameters for Chagas Disease",
        x = "Biomarker",
        y = "AUC",
        fill = "AUC Category") +
   theme_minimal(base_size = 12) +
-  theme(
-    plot.background = element_rect(fill = "cornsilk", color = NA),
-    panel.background = element_rect(fill = "cornsilk", color = NA)
-  )
+  theme( 
+    axis.title.x = element_text(size = 14, face = "bold"),
+    axis.title.y = element_text(size = 14, face = "bold"),
+    axis.text.y = element_text(face = "bold"),
+    axis.text.x = element_text(face = "bold"),
+    plot.title = element_text(size = 18, face = "bold"),
+    legend.title = element_text(size = 14, face = "bold"),
+    legend.text = element_text(face = "bold"),
+    strip.text = element_text(size = 12, face = "bold")
+    )
+  
 
 # Classification vector
 classification_df <- tribble(
@@ -494,169 +498,86 @@ ggplot(combined_auc_labeled, aes(x = reorder(paste(Biomarker, Sample, sep = " ")
   geom_col() +
   coord_flip() +
   facet_wrap(~Group, scales = "free_y") +
-  scale_fill_manual(values = c("Diagnostic" = "#2d0594FF",
-                               "Prognostic" = "#9512A1FF",
-                               "Both" = "#DD5E66FF")) +
-  labs(title = "AUC Values for Biomarkers in Chagas Disease",
-       subtitle = "Biomarkers classified as Diagnostic, Prognostic, or Both",
+  scale_fill_manual(values = wes_palette("AsteroidCity2", n = 3, type = "discrete")) +
+  labs(title = "Biomarkers classified as Diagnostic, Prognostic, or Both",
        x = "Biomarker",
        y = "AUC",
        fill = "Biomarker Role") +
   theme_minimal(base_size = 12) +
-  theme(
-    plot.background = element_rect(fill = "cornsilk", color = NA),
-    panel.background = element_rect(fill = "cornsilk", color = NA)
-  )
-
-```
-
-
-
-
-
-
-**OLD STUFF**
-
-
---------------------
-Can a biomarker correctly detect whether or not someone has chagas?
-*LDA*
---------------------
-``` {r sensspec}
-
-#Remove ID for LDA
-data <- data[, -1]
-
-#Linear model
-lda.mod <- lda(Symptom ~ ., data = data)
-lda.mod
-
-#LDA prediction
-lda.pred <- predict(lda.mod, data)
-lda.pred.class <- lda.pred$class
-table(lda.pred.class, data$Symptom) 
-lda.detail <- cbind(as.character(lda.pred$class), round(lda.pred$posterior,8))
-
-#Plot LDA model
-plot(lda.mod)
-
-#ataframe with first two discriminants
-plot_data <- data.frame(LD1 = lda.pred$x[,1],
-                        LD2 = lda.pred$x[,2],
-                        Group = data$Symptom)
-
-#plotting seperation with first two discriminants
-ggplot(plot_data, aes(x = LD1, y = LD2, color = Group)) +
-  geom_point(size = 3, alpha = 0.7) +
-  labs(title = "LDA: Projection onto LD1 and LD2",
-       x = "Linear Discriminant 1",
-       y = "Linear Discriminant 2") +
-  theme_minimal() +
-  theme(text = element_text(size=14))
-
-#Which biomarkers contribute the most?
-coef_df <- as.data.frame(lda.mod$scaling)
-coef_df$Variable <- rownames(coef_df)
-
-#LD1
-coef_df[order(abs(coef_df$LD1), decreasing = TRUE), c("Variable", "LD1")]
-
-#LD2
-coef_df[order(abs(coef_df$LD2), decreasing = TRUE), c("Variable", "LD2")]
-
-```
-
---------------------
-Can we predict whether a participant is Asymptomatic or Symptomatic based on the different serum values??
-*Random Forest, bagging, boosting*
---------------------
-``` {r copepserum}
-
-#Mutate variable to add asymptomatic vs symptomatic
-data <- data %>%
-  filter(Symptom %in% c("ASYM", "SYM")) %>%
-  mutate(
-    a_or_s = case_when(
-      Symptom == "ASYM" ~ 0, #asymptomatic
-      Symptom == "SYM" ~ 1, #symptomatic
-      TRUE ~ NA_real_
+  theme( 
+    axis.title.x = element_text(size = 14, face = "bold"),
+    axis.title.y = element_text(size = 14, face = "bold"),
+    axis.text.y = element_text(face = "bold"),
+    axis.text.x = element_text(face = "bold"),
+    plot.title = element_text(size = 18, face = "bold"),
+    legend.title = element_text(size = 14, face = "bold"),
+    legend.text = element_text(face = "bold"),
+    strip.text = element_text(size = 12, face = "bold")
     )
-  )
+  
 
-#make sure its a factor
-data$a_or_s <- as.factor(data$a_or_s)
-
-#create training and test set
-set.seed(1)
-train = sample(dim(data)[1], dim(data) [1]/2)
-data.train = data[train, ]
-data.test = data[-train, ]
-
-#build the tree on training data
-tree.data = tree(a_or_s ~ Copeptin_Serum + HnRNPA1_Serum + Endostatin_Serum + Myostatin_Serum + etOhDG_Serum + PARP1_Serum, data, subset = train)
-
-#pruned tree
-cv.data = cv.tree(tree.data, FUN=prune.misclass)
-cv.data
-plot(cv.data$size,cv.data$dev,type="b")
-prune.data=prune.misclass(tree.data, best = sqrt(6))
-plot(prune.data)
-
-#Getting % of correct predictions for pruned tree
-prune.pred = predict(prune.data,data.test,type="class")
-tab <- table(prune.pred,data.test$a_or_s)
-tab
-(tab[1,1]+tab[2,2])/sum(tab)
-
-#Bagging and Random Forests
-data$a_or_s <- as.numeric(as.character(data$a_or_s))
-
-#Bagging
-bag.data = randomForest(a_or_s ~Copeptin_Serum + HnRNPA1_Serum + Endostatin_Serum + Myostatin_Serum + etOhDG_Serum + PARP1_Serum, data = data.train, mtry = 6, ntree = 100, importance = T)
-bag.pred = predict(bag.data, data.test)
-
-#Get predictions on test set from bagged tree
-tabbag <- table(bag.pred,data.test$a_or_s)
-tabbag
-tabbag[1,1]+tabbag[2,2]/sum(tabbag) #% of correct predictions
-importance(bag.data)
-varImpPlot(bag.data)
-
-#Random Forest
-rf.data = randomForest(a_or_s ~ Copeptin_Serum + HnRNPA1_Serum + Endostatin_Serum + Myostatin_Serum + etOhDG_Serum + PARP1_Serum, data = data.train, mtry = sqrt(6), ntree = 100, importance = T)
-rf.pred = predict(rf.data, data.test)
-
-#Get predictions on test set from random forest
-tabrf <- table(rf.pred, data.test$a_or_s)
-tabrf
-(tabrf[1.1]+tabrf[2,2])/sum(tabrf) #% of correct predictions
-importance(rf.data)
-varImpPlot(rf.data)
-
-#Boosting
-#Changing a_or_s into a numeric variable
-data$a_or_s <- as.numeric(data$a_or_s)
-boost.data = gbm(a_or_s ~ Copeptin_Serum + HnRNPA1_Serum + Endostatin_Serum + Myostatin_Serum + etOhDG_Serum + PARP1_Serum, data = data[train,], distribution="bernoulli",n.trees=5000,interaction.depth=3,shrinkage=.001, bag.fraction = 0.3, n.minobsinnode = 1)
-summary(boost.data, las = 1)
-yhat.boost = predict(boost.data, newdata=data[-train,], n.trees=5000)
-yhat.boost[1:10] 
-
-#Find optimal n.trees via cross-validation
-boost.data = gbm(a_or_s ~ Copeptin_Serum + HnRNPA1_Serum + Endostatin_Serum + Myostatin_Serum + etOhDG_Serum + PARP1_Serum, data = data[train,],distribution="bernoulli",n.trees=5000,interaction.depth=3,shrinkage=.001, bag.fraction = 0.3, n.minobsinnode = 1, cv.folds=3)
-summary(boost.data, las=1)
-best.ntrees <- gbm.perf(boost.data, method"cv", plot.it=TRUE)
-phat.boost = predict(boost.data, type="response", newdata=data[-train,], n.trees=best.ntrees)
-phat.boost[1:10]
-yhat.boost=ifelse(phat.boost > 0.5, "Yes", "No")
-yhat.boost[1:10]
-
-tabboost <- table(yhat.boost, data$a_or_s[-train])
-(tabboost[1,1]+tabboost[2,2])/sum(tabboost) #% of correct predictions
-
-#Proportion of 0s in a_or_s
-prop_zeros <- sum(data$a_or_s[train] == 0, na.rm = TRUE) / length(data$a_or_s[train])
-prop_zeros
 ```
+
+
+
+--------------------
+Radar Plot
+- radar plot for protein parameter average for each group
+- just take the log of max, min, average
+--------------------
+``` {r radar}
+
+#Group averages
+avg_data <- data %>%
+  group_by(Symptom) %>%
+  summarise(across(matches("(_Serum|_Plasma)$"), mean, na.rm = TRUE)) %>%
+  as.data.frame()
+
+log_data <- avg_data %>%
+  mutate(across(where(is.numeric), log))
+
+# Set rownames from Symptom and remove that column
+rownames(log_data) <- log_data$Symptom
+log_data$Symptom <- NULL
+
+# Set min and max values explicitly
+min_val <- 0  # your observed raw minimum
+max_val <- 8  # your observed raw maximum
+
+custom_labels <- c("Copeptin (S)", "HnRNPA1 (S)", "Endostatin (S)", "Myostatin (S)",
+                   "8-OHdG (S)", "PARP1 (S)", "Copeptin (P)", "HnRNPA1 (P)", "Endostatin (P)", "Myostatin (P)",
+                   "8-OHdG (P)", "PARP1 (P)")
+
+# Create df with required min and max rows
+df_radar <- log_data
+colnames(df_radar) <- custom_labels 
+df_radar <- rbind(rep(max_val, ncol(df_radar)),
+                  rep(min_val, ncol(df_radar)),
+                  df_radar)
+
+# Plot radar chart with custom axis labels
+radarchart(df_radar,
+           axistype = 1,
+           caxislabels = round(seq(min_val, max_val, length.out = 5), 2),
+           pcol = wes_palette("Darjeeling1"),
+           plwd = 2,
+           cglcol = "grey",
+           cglty = 1,
+           axislabcol = "black",
+           vlcex = 0.9,
+           title = "Log Averages of Protein Parameters by Symptom")
+
+# Add legend for the groups
+legend("bottomleft",
+       legend = rownames(df_radar)[3:nrow(df_radar)],
+       col = wes_palette("Darjeeling1"),
+       lty = 1, lwd = 4, bty = "n")
+
+
+
+```
+
+
 
 
 
