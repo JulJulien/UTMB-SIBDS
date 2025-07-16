@@ -559,25 +559,50 @@ grid.arrange(grobs = p, ncol = 2)
 
 ```
 
+<<<<<<< Updated upstream
 ```{r logistic regression for just mtCOII}
 
   mit_model <- glm(disease~mtCOII, data = mdata, family = binomial)
   summary(mit_model)
+=======
+-------------------------------------------------
+Can we predict whether someone has Chagas Disease
+based on the DNA Type's copies/ml ?
+-------------------------------------------------
+```{r Univariable Logistic Regression Mitochondrial DNA }
+
+# Empty list to store ggplots
+plot_list <- list()
+
+# Logistic Regression where DNA Type is the predictor of disease
+for (DNA_Type in list_DNA_Types) {
+  formula_text <- paste("disease ~", DNA_Type)
+  mit_model <- glm(as.formula(formula_text), data = mdata, family = binomial)
+>>>>>>> Stashed changes
   prob <- predict(mit_model, type = "response")
   roc_obj <- roc(mdata$disease, prob)
   
   # Generate ggplot ROC plot
   roc_plot <- ggroc(roc_obj) +
+<<<<<<< Updated upstream
     ggtitle("mtCOII ROC") +
+=======
+    ggtitle(paste(DNA_Type, "ROC")) +
+>>>>>>> Stashed changes
     theme_minimal()
  
   # Calculate AUC
   auc_value <- auc(roc_obj)
+<<<<<<< Updated upstream
   auc_message <- paste0("mtCOII AUC: ", auc_value)
+=======
+  auc_message <- paste0(DNA_Type," AUC: ", auc_value)
+>>>>>>> Stashed changes
   print(auc_message)
   
   # Plot ROC
   plot(roc_plot)
+<<<<<<< Updated upstream
 
 ```
 
@@ -636,6 +661,35 @@ grid.arrange(grobs = plot_list,
 
 ```
 
+=======
+  
+  # Plot all the ROCs
+  plot_list[[DNA_Type]] <- roc_plot
+}
+
+grid.arrange(grobs = plot_list, 
+               top = textGrob("DNA Types Predict Diseased vs NHS",
+                              just = "top", 
+                              gp = gpar(fontsize = 16, fontface = "bold")),
+               ncol = 4)
+```
+
+```{r Multivariable Logistic Regression Mitochondrial DNA}
+ 
+  # Multivariate Logistic Regression
+  mit_model <- glm(disease~mtND1 + mtND5 + mtATP6 + mtCOII + mtCytB, data = mdata, family = binomial)
+  prob <-  predict(mit_model, type = "response")
+  roc_obj <- roc(mdata$disease, prob)
+  plot(roc_obj)
+  
+  # Calculate AUC
+  auc_value <- auc(roc_obj)
+  auc_message <- paste0(" AUC: ", auc_value)
+  print(auc_message)
+
+```
+
+>>>>>>> Stashed changes
 Can a DNA Type Predict Chagas Disease? 
 Logisitc Regression AUC Results:
 [1] "mtND1 AUC: 0.836111111111111"
@@ -730,19 +784,29 @@ Our logistic regression models classify asym from sym with high accuracy.
 Can DNA Type when grouped, classify Symptomatic vs Asymptomatic ?
 mtND1 + mtND5 + mtATP6 + mtCOII + mtCytB: AUC: 1
 
+<<<<<<< Updated upstream
 ``` {r graphing}
 
+=======
+
+```{r Mitochondrial DNA AUC Plot No Legend}
+>>>>>>> Stashed changes
 library(ggplot2)
 library(dplyr)
 library(tidyr)
 
+<<<<<<< Updated upstream
 # Create the dataframe
+=======
+# AUC data
+>>>>>>> Stashed changes
 data <- data.frame(
   Gene = c("MtND1", "MtND5", "MtATP6", "MtcCOII", "MtCytB"),
   Control_vs_Disease = c(0.836, 0.583, 0.813, 0.441, 0.544),
   Sym_vs_Asym = c(0.991, 1, 1, 0.924, 0.942)
 )
 
+<<<<<<< Updated upstream
 # Pivot to long format
 data_long <- pivot_longer(data, 
                           cols = -Gene, 
@@ -776,6 +840,199 @@ ggplot(data_long, aes(x = AUC, y = Gene, fill = Comparison)) +
 # save as png
 ggsave("Mitochondrial_DNA_AUC_Comparison.png", width = 7, height = 4, dpi = 300)
 
+=======
+# Classify role
+gene_classification <- data %>%
+  mutate(
+    Role = case_when(
+      Control_vs_Disease >= 0.8 & Sym_vs_Asym >= 0.8 ~ "Diagnostic &\n Prognostic",
+      Control_vs_Disease >= 0.8 ~ "Diagnostic",
+      Sym_vs_Asym >= 0.8 ~ "Prognostic",
+      TRUE ~ "Neither"
+    )
+  )
+
+# Reshape for ggplot
+data_long <- pivot_longer(gene_classification,
+                          cols = c(Control_vs_Disease, Sym_vs_Asym),
+                          names_to = "Comparison",
+                          values_to = "AUC") %>%
+  mutate(
+    ComparisonLabel = case_when(
+      Comparison == "Control_vs_Disease" ~ "With vs W/o Chagas",
+      Comparison == "Sym_vs_Asym" ~ "Asym vs Sym"
+    )
+  )
+
+# Base plot WITHOUT legend
+plot_main <- ggplot(data_long, aes(x = AUC, y = reorder(Gene, AUC), fill = Role)) +
+  geom_col() +
+  facet_wrap(~ComparisonLabel, scales = "free_y") +
+  geom_vline(xintercept = 0.8, linetype = "dashed", color = "black", linewidth = 0.5) +
+  scale_fill_manual(
+    values = c(
+      "Diagnostic &\n Prognostic" = "#DD5E66",
+      "Diagnostic" = "#2d0594",
+      "Prognostic" = "#9512A1",
+      "Neither" = "gray70"
+    )
+  ) +
+  labs(
+    title = "AUC Values for MtDNA Types in Chagas Disease",
+    x = "AUC", y = "Mitochondrial DNA Type"
+  ) +
+  theme_minimal(base_size = 30) +
+  theme(
+    strip.text = element_text(face = "bold", size = 40),
+    plot.title = element_text(face = "bold", size = 40),
+    axis.title = element_text(face = "bold"),
+    legend.position = "none"
+  )
+plot(plot_main)
+# Save without legend
+ggsave("Mitochondrial_DNA_AUC_Without_Legend.png", plot = plot_main, width = 16, height = 9, dpi = 300)
+```
+
+```{r Mitochondrial DNA Plot Legend}
+# Create a dummy plot JUST to extract the legend
+plot_legend <- ggplot(data_long, aes(x = AUC, y = Gene, fill = Role)) +
+  geom_col() +
+  scale_fill_manual(
+    values = c(
+      "Diagnostic &\n Prognostic" = "#DD5E66",
+      "Diagnostic" = "#2d0594",
+      "Prognostic" = "#9512A1",
+      "Neither" = "gray70"
+    )
+  ) +
+  theme_minimal() +
+  theme(legend.title = element_text(face = "bold")) +
+  labs(fill = "Biomarker Role")
+
+# Extract legend using cowplot
+library(cowplot)
+legend_only <- cowplot::get_legend(plot_legend)
+
+plot(legend_only)
+# Save the legend
+ggsave("Mitochondrial_DNA_AUC_Legend.png", plot = legend_only, width = 4, height = 3, dpi = 300)
+```
+
+```{r Protein Parameter DNA Plot No Legend}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tibble)
+
+# AUC data
+diagnosis_auc <- tribble(
+  ~Biomarker, ~Sample, ~AUC,
+  "Copeptin", "Serum", 1,
+  "Copeptin", "Plasma", 1,
+  "HnRNPA1", "Serum", 0.9888889,
+  "HnRNPA1", "Plasma", 0.9847222,
+  "Endostatin", "Serum", 0.9222222,
+  "Endostatin", "Plasma", 0.9513889,
+  "Myostatin", "Serum", 0.75,
+  "Myostatin", "Plasma", 0.7013889,
+  "8-OhDG", "Serum", 0.9972222,
+  "8-OhDG", "Plasma", 1,
+  "PARP1", "Serum", 1,
+  "PARP1", "Plasma", 1
+)
+
+prognosis_auc <- tribble(
+  ~Biomarker, ~Sample, ~AUC,
+  "Copeptin", "Serum", 0.9822222,
+  "Copeptin", "Plasma", 1,
+  "HnRNPA1", "Serum", 0.7066667,
+  "HnRNPA1", "Plasma", 0.6133333,
+  "Endostatin", "Serum", 0.8911111,
+  "Endostatin", "Plasma", 0.9155556,
+  "Myostatin", "Serum", 1,
+  "Myostatin", "Plasma", 0.9955556,
+  "8-OhDG", "Serum", 0.9911111,
+  "8-OhDG", "Plasma", 0.8355556,
+  "PARP1", "Serum", 0.6044444,
+  "PARP1", "Plasma", 0.5244444
+)
+
+diagnosis_auc <- diagnosis_auc %>% mutate(Group = "With vs W/o Chagas")
+prognosis_auc <- prognosis_auc %>% mutate(Group = "Asym vs Sym")
+
+combined_auc <- bind_rows(diagnosis_auc, prognosis_auc) %>%
+  mutate(Label = paste(Biomarker, Sample))
+
+classification_df <- tribble(
+  ~Biomarker, ~Classification,
+  "Copeptin", "Both",
+  "HnRNPA1", "Diagnostic",
+  "Endostatin", "Both",
+  "Myostatin", "Prognostic",
+  "8-OhDG", "Both",
+  "PARP1", "Diagnostic"
+)
+
+combined_auc <- combined_auc %>%
+  left_join(classification_df, by = "Biomarker") %>%
+  mutate(Classification = replace_na(Classification, "Neither"))
+
+# Plot without legend
+plot_protein_main <- ggplot(combined_auc, aes(x = AUC, y = reorder(Label, AUC), fill = Classification)) +
+  geom_col() +
+  facet_wrap(~Group, scales = "free_y") +
+  geom_vline(xintercept = 0.8, linetype = "dashed", color = "black", linewidth = 0.6) +
+  scale_fill_manual(
+    values = c(
+      "Diagnostic" = "#2d0594",
+      "Prognostic" = "#9512A1",
+      "Both" = "#DD5E66",
+      "Neither" = "gray70"
+    )
+  ) +
+  labs(
+    title = "AUC Values for Biomarkers in Chagas Disease",
+    x = "AUC", y = "Biomarker"
+  ) +
+  theme_minimal(base_size = 40) +
+  theme(
+    strip.text = element_text(face = "bold", size = 35),
+    plot.title = element_text(face = "bold", size = 35),
+    plot.subtitle = element_text(size = 12),
+    axis.title = element_text(face = "bold"),
+    legend.position = "none"
+  )
+
+plot(plot_protein_main)
+# Save the main plot
+ggsave("Protein_AUC_Plot_Only.png", plot = plot_protein_main, width = 19, height = 14, dpi = 300)
+
+```
+
+```{r Protein Paramter DNA Legend Only}
+
+# Dummy plot to extract the legend
+plot_protein_legend <- ggplot(combined_auc, aes(x = AUC, y = Label, fill = Classification)) +
+  geom_col() +
+  scale_fill_manual(
+    values = c(
+      "Diagnostic" = "#2d0594",
+      "Prognostic" = "#9512A1",
+      "Both" = "#DD5E66",
+      "Neither" = "gray70"
+    )
+  ) +
+  theme_minimal() +
+  labs(fill = "Biomarker\nRole") +
+  theme(legend.title = element_text(face = "bold"))
+
+# Extract using cowplot
+library(cowplot)
+legend_only <- get_legend(plot_protein_legend)
+
+# Save legend only as image
+ggsave("Protein_AUC_Legend_Only.png", plot_grid(legend_only), width = 4, height = 3, dpi = 300)
+>>>>>>> Stashed changes
 
 ```
 
