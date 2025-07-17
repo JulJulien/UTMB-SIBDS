@@ -561,14 +561,11 @@ grid.arrange(grobs = p, ncol = 2)
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
 ```{r logistic regression for just mtCOII}
 
   mit_model <- glm(disease~mtCOII, data = mdata, family = binomial)
   summary(mit_model)
 =======
-=======
->>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 -------------------------------------------------
@@ -585,9 +582,6 @@ for (DNA_Type in list_DNA_Types) {
   formula_text <- paste("disease ~", DNA_Type)
   mit_model <- glm(as.formula(formula_text), data = mdata, family = binomial)
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -596,7 +590,6 @@ for (DNA_Type in list_DNA_Types) {
   
   # Generate ggplot ROC plot
   roc_plot <- ggroc(roc_obj) +
-<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
     ggtitle("mtCOII ROC") +
@@ -606,20 +599,13 @@ for (DNA_Type in list_DNA_Types) {
 =======
     ggtitle(paste(DNA_Type, "ROC")) +
 >>>>>>> Stashed changes
-=======
-    ggtitle(paste(DNA_Type, "ROC")) +
->>>>>>> Stashed changes
     theme_minimal()
  
   # Calculate AUC
   auc_value <- auc(roc_obj)
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
   auc_message <- paste0("mtCOII AUC: ", auc_value)
-=======
-  auc_message <- paste0(DNA_Type," AUC: ", auc_value)
->>>>>>> Stashed changes
 =======
   auc_message <- paste0(DNA_Type," AUC: ", auc_value)
 >>>>>>> Stashed changes
@@ -630,7 +616,6 @@ for (DNA_Type in list_DNA_Types) {
   
   # Plot ROC
   plot(roc_plot)
-<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 
@@ -691,35 +676,6 @@ grid.arrange(grobs = plot_list,
 
 ```
 
-=======
-  
-  # Plot all the ROCs
-  plot_list[[DNA_Type]] <- roc_plot
-}
-
-grid.arrange(grobs = plot_list, 
-               top = textGrob("DNA Types Predict Diseased vs NHS",
-                              just = "top", 
-                              gp = gpar(fontsize = 16, fontface = "bold")),
-               ncol = 4)
-```
-
-```{r Multivariable Logistic Regression Mitochondrial DNA}
- 
-  # Multivariate Logistic Regression
-  mit_model <- glm(disease~mtND1 + mtND5 + mtATP6 + mtCOII + mtCytB, data = mdata, family = binomial)
-  prob <-  predict(mit_model, type = "response")
-  roc_obj <- roc(mdata$disease, prob)
-  plot(roc_obj)
-  
-  # Calculate AUC
-  auc_value <- auc(roc_obj)
-  auc_message <- paste0(" AUC: ", auc_value)
-  print(auc_message)
-
-```
-
->>>>>>> Stashed changes
 =======
   
   # Plot all the ROCs
@@ -874,13 +830,8 @@ mtND1 + mtND5 + mtATP6 + mtCOII + mtCytB: AUC: 1
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
 ``` {r graphing}
 
-=======
-
-```{r Mitochondrial DNA AUC Plot No Legend}
->>>>>>> Stashed changes
 =======
 
 ```{r Mitochondrial DNA AUC Plot No Legend}
@@ -895,11 +846,7 @@ library(tidyr)
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
 # Create the dataframe
-=======
-# AUC data
->>>>>>> Stashed changes
 =======
 # AUC data
 >>>>>>> Stashed changes
@@ -912,7 +859,6 @@ data <- data.frame(
   Sym_vs_Asym = c(0.991, 1, 1, 0.924, 0.942)
 )
 
-<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 # Pivot to long format
@@ -949,8 +895,6 @@ ggplot(data_long, aes(x = AUC, y = Gene, fill = Comparison)) +
 ggsave("Mitochondrial_DNA_AUC_Comparison.png", width = 7, height = 4, dpi = 300)
 
 =======
-=======
->>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 # Classify role
@@ -1145,9 +1089,6 @@ legend_only <- get_legend(plot_protein_legend)
 # Save legend only as image
 ggsave("Protein_AUC_Legend_Only.png", plot_grid(legend_only), width = 4, height = 3, dpi = 300)
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
