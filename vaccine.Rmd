@@ -777,9 +777,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
-<<<<<<< Updated upstream
 # Create the dataframe
-=======
 # AUC data
 data <- data.frame(
   Gene = c("MtND1", "MtND5", "MtATP6", "MtcCOII", "MtCytB"),
@@ -972,7 +970,7 @@ plot_protein_main <- ggplot(combined_auc, aes(x = AUC, y = reorder(Label, AUC), 
       # Pink = "#DD5E66",
       # Blue = "#2d0594",
       # Purple = "#9512A1",
-      "Diagnostic &\n Prognostic" = "#9512A1",
+      "Both" = "#9512A1",
       "Diagnostic" = "#DD5E66",
       "Prognostic" = "#2d0594",
       "Neither" = "gray70"
@@ -1023,7 +1021,73 @@ legend_only <- get_legend(plot_protein_legend)
 
 # Save legend only as image
 ggsave("Protein_AUC_Legend_Only.png", plot_grid(legend_only), width = 4, height = 3, dpi = 300)
->>>>>>> Stashed changes
+
+```
+
+--------------------
+Radar Plot
+- radar plot for protein parameter average for each group
+- just take the log of max, min, average
+--------------------
+``` {r radar}
+
+#Group averages
+avg_data <- data %>%
+  group_by(Symptom) %>%
+  summarise(across(matches("(_Serum|_Plasma)$"), mean, na.rm = TRUE)) %>%
+  as.data.frame()
+
+log_data <- avg_data %>%
+  mutate(across(where(is.numeric), log))
+
+# Set rownames from Symptom and remove that column
+rownames(log_data) <- log_data$Symptom
+log_data$Symptom <- NULL
+
+# Set min and max values explicitly
+min_val <- 0  # your observed raw minimum
+max_val <- 8  # your observed raw maximum
+
+custom_labels <- c("Copeptin (S)", "HnRNPA1 (S)", "Endostatin (S)", "Myostatin (S)",
+                   "8-OHdG (S)", "PARP1 (S)", "Copeptin (P)", "HnRNPA1 (P)", "Endostatin (P)", "Myostatin (P)",
+                   "8-OHdG (P)", "PARP1 (P)")
+
+# Create df with required min and max rows
+df_radar <- log_data
+colnames(df_radar) <- custom_labels 
+df_radar <- rbind(rep(max_val, ncol(df_radar)),
+                  rep(min_val, ncol(df_radar)),
+                  df_radar)
+
+# Define your custom sizes
+axis_label_size <- 0.8     # Size of the axis label text
+variable_label_size <- 1.2 # Size of the variable labels (vlcex)
+title_size <- 1.5          # Size of the title
+
+# Plot the radar chart
+radarchart(df_radar,
+           axistype = 1,
+           caxislabels = round(seq(min_val, max_val, length.out = 5), 2),
+           pcol = wes_palette("Darjeeling1"),
+           plwd = 2,
+           cglcol = "grey",
+           cglty = 1,
+           axislabcol = "black",
+           calcex = axis_label_size,  # axis label size
+           vlcex = variable_label_size,  # variable name size
+           title = "Log Averages of Protein Parameters by Symptom")
+
+# Change the title size using base graphics
+title("Log Averages of Protein Parameters by Symptom", cex.main = title_size)
+
+# Add legend for the groups
+legend("bottomleft",
+       legend = rownames(df_radar)[3:nrow(df_radar)],
+       col = wes_palette("Darjeeling1"),
+       lty = 1, lwd = 4, bty = "n")
+
+# Save it
+ggsave("radar_plot_protein_parameters.png", width = 10, height = 10, dpi = 300)
 
 ```
 
